@@ -1,0 +1,19 @@
+<openerp>
+    <data>
+
+        <record id="asistelibrost_view_move_form" model="ir.ui.view">
+            <field name="name">asistelibros.account.move.form</field>
+            <field name="model">account.move</field>
+            <field name="inherit_id" ref="l10n_gt_extra.l10n_gt_view_move_form"/>
+            <field name="arch" type="xml">
+                <field name="final_rango" position="after">
+                    <field name="criva"/>
+                    <field name="cadi"/>
+                    <field name="dua"/>
+                    <field name="valor_constancia"/>
+                </field>
+            </field>
+        </record>
+
+    </data>
+</openerp>

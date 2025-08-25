@@ -182,7 +182,7 @@ class AccountMove(models.Model):
         DatosEmision = etree.SubElement(DTE, DTE_NS+"DatosEmision", ID="DatosEmision")
 
         tipo_documento_fel = factura.journal_id.tipo_documento_fel
-        tipo_interno_factura = factura.type if 'type' in factura.fields_get() else factura.move_type
+        tipo_interno_factura = factura.move_type
         if tipo_documento_fel in ['FACT', 'FCAM'] and tipo_interno_factura == 'out_refund':
             tipo_documento_fel = 'NCRE'
 
@@ -530,7 +530,8 @@ class AccountMove(models.Model):
         if tipo_documento_fel == "FESP" and factura.partner_id.cui:
             nit_receptor = factura.partner_id.cui
 
-        fecha = fields.Date.from_string(factura.invoice_date).strftime('%Y-%m-%d')
+        fecha = factura.invoice_date.strftime('%Y-%m-%d') if factura.invoice_date else ''
+
         hora = "00:00:00-06:00"
         fecha_hora = fecha+'T'+hora
         
@@ -550,7 +551,7 @@ class AccountJournal(models.Model):
     tipo_documento_fel = fields.Selection([('FACT', 'FACT'), ('FCAM', 'FCAM'), ('FPEQ', 'FPEQ'), ('FCAP', 'FCAP'), ('FESP', 'FESP'), ('NABN', 'NABN'), ('RDON', 'RDON'), ('RECI', 'RECI'), ('NDEB', 'NDEB'), ('NCRE', 'NCRE')], 'Tipo de Documento FEL', copy=False)
     error_en_historial_fel = fields.Boolean('Error FEL en historial', help='Los errores no se muestran en pantalla, solo se registran en el historial')
     contingencia_fel = fields.Boolean('Habilitar contingencia FEL')
-    invoice_reference_type = fields.Selection(selection_add=[('fel', 'FEL')], ondelete=({'fel': 'set default'} if version_info[0] > 13 else ''))
+    invoice_reference_type = fields.Selection(selection_add=[('fel', 'FEL')], ondelete={'fel': 'set default'})
     no_usar_descuento_fel = fields.Boolean('No usar descuento cuando hay lineas negativas en FEL')
     enviar_lineas_en_cero_fel = fields.Boolean('Enviar lineas en cero para FEL')
 

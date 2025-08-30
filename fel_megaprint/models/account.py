@@ -16,7 +16,7 @@ import uuid
 import logging
 
 class AccountInvoice(models.Model):
-    _inherit = "account.invoice"
+    _inherit = "account.move"
 
     pdf_fel = fields.Binary('PDF FEL', copy=False)
     name_pdf_fel = fields.Char('Nombre archivo PDF FEL', default='fel.pdf', size=32)

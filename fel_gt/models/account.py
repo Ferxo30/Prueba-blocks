@@ -249,13 +249,16 @@ class AccountMove(models.Model):
         Pais = etree.SubElement(DireccionReceptor, DTE_NS+"Pais")
         Pais.text = factura.partner_id.country_id.code or 'GT'
 
-        if 'dte:Frases' in factura.company_id.frases_fel:
-            Frases = etree.fromstring(factura.company_id.frases_fel)
+        frases_fel_str = factura.company_id.frases_fel if isinstance(factura.company_id.frases_fel, str) else ''
+
+        if 'dte:Frases' in frases_fel_str:
+            Frases = etree.fromstring(frases_fel_str)
         else:
-            Frases = etree.Element(DTE_NS+'Frases')
+            Frases = etree.Element(DTE_NS + 'Frases')
             def frase(tipo=0, escenario=0):
-                etree.SubElement(Frases, DTE_NS+'Frase', TipoFrase=str(tipo), CodigoEscenario=str(escenario))
-            exec(factura.company_id.frases_fel, {'etree': etree, 'Frases': Frases, 'DTE_NS': DTE_NS, 'factura': factura, 'frase': frase})
+                etree.SubElement(Frases, DTE_NS + 'Frase', TipoFrase=str(tipo), CodigoEscenario=str(escenario))
+            exec(frases_fel_str, {'etree': etree, 'Frases': Frases, 'DTE_NS': DTE_NS, 'factura': factura, 'frase': frase})
+
             
         if tipo_documento_fel in ['NABN', 'FESP', 'RECI', 'RDON']:
             frase_isr = Frases.find('.//*[@TipoFrase="1"]')

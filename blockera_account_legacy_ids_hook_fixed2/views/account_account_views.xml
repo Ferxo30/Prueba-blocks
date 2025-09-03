@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Hereda la vista de LISTA principal del plan de cuentas -->
+  <record id="view_account_account_list_legacy" model="ir.ui.view">
+    <field name="name">account.account.list.legacy</field>
+    <field name="model">account.account</field>
+    <field name="inherit_id" ref="account.view_account_list"/>
+    <field name="mode">extension</field>
+    <field name="arch" type="xml">
+      <!-- En Odoo 18 la etiqueta es <list>, no <tree> -->
+      <xpath expr="//list" position="inside">
+        <!-- optional="show" para que salgan visibles por defecto -->
+        <field name="old_code" string="Código antiguo" optional="show"/>
+        <field name="old_name" string="Nombre antiguo" optional="show"/>
+        <field name="legacy_source" string="Origen legacy" optional="show"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- (Opcional) también en el formulario de la cuenta -->
+  <record id="view_account_account_form_legacy" model="ir.ui.view">
+    <field name="name">account.account.form.legacy</field>
+    <field name="model">account.account</field>
+    <field name="inherit_id" ref="account.view_account_form"/>
+    <field name="mode">extension</field>
+    <field name="arch" type="xml">
+      <!-- Inserta después del campo code -->
+      <xpath expr="//field[@name='code']" position="after">
+        <field name="old_code"/>
+        <field name="old_name"/>
+        <field name="legacy_source"/>
+        <field name="legacy_notes"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

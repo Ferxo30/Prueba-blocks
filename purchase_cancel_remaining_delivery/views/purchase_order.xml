@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+  <record id="view_purchase_order_form_cancel_remaining_delivery" model="ir.ui.view">
+    <field name="name">purchase.order.form.cancel.remaining.delivery.v18</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="button_cancel_remaining_delivery"
+                string="Cancel Remaining Delivery"
+                type="object"
+                class="btn-secondary"
+                groups="purchase.group_purchase_manager"
+                invisible="state not in ['purchase', 'done']"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

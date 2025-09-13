@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+  <record id="view_purchase_order_form_force_cancel_delete" model="ir.ui.view">
+    <field name="name">purchase.order.form.force.cancel.delete.v18</field>
+    <field name="model">purchase.order</field>
+    <field name="inherit_id" ref="purchase.purchase_order_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_force_cancel_only"
+                string="Forzar cancelación (no borrar)"
+                type="object"
+                class="btn-warning"
+                groups="base.group_system"
+                invisible="state in ['cancel']"/>
+        <button name="action_force_cancel_and_delete"
+                string="Forzar cancelación y borrar"
+                type="object"
+                class="btn-danger"
+                groups="base.group_system"
+                invisible="state in ['cancel']"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

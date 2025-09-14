@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+  <record id="view_hr_payslip_form_force_buttons" model="ir.ui.view">
+    <field name="name">hr.payslip.form.force.cancel.delete.v18</field>
+    <field name="model">hr.payslip</field>
+    <field name="inherit_id" ref="payroll.hr_payslip_view_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_force_cancel_only"
+                string="Forzar cancelación (no borrar)"
+                type="object"
+                class="btn-warning"
+                groups="base.group_system"
+                invisible="state in ['cancel']"/>
+        <button name="action_force_cancel_and_delete"
+                string="Forzar cancelación y borrar"
+                type="object"
+                class="btn-danger"
+                groups="base.group_system"
+                invisible="state in ['cancel']"/>
+      </xpath>
+    </field>
+  </record>
+</odoo>

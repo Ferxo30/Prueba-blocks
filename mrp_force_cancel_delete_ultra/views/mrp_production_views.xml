@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+  <record id="view_mrp_production_form_force_buttons_ultra" model="ir.ui.view">
+    <field name="name">mrp.production.form.force.cancel.delete.ultra.v18</field>
+    <field name="model">mrp.production</field>
+    <field name="inherit_id" ref="mrp.mrp_production_form_view"/>
+    <field name="arch" type="xml">
+      <xpath expr="//header" position="inside">
+        <button name="action_force_cancel_only"
+                string="Forzar cancelación (no borrar)"
+                type="object"
+                class="btn-warning"
+                groups="base.group_system"
+                invisible="state in ['cancel']"/>
+        <button name="action_force_cancel_and_delete"
+                string="Forzar cancelación y borrar"
+                type="object"
+                class="btn-danger"
+                groups="base.group_system"/>
+        <button name="action_ultra_erase_everything"
+                string="Borrado total (QA extremo)"
+                type="object"
+                class="btn-danger"
+                groups="base.group_system"
+                confirm="Esto eliminará TODOS los movimientos, pickings, SVL y asientos relacionados aunque estén posteados. Es irreversible. ¿Continuar?"/>
+      </xpath>
+    </field>
+  </record>
+
+  <record id="action_ultra_erase_everything_server" model="ir.actions.server">
+    <field name="name">Borrado total (QA extremo)</field>
+    <field name="model_id" ref="mrp.model_mrp_production"/>
+    <field name="state">code</field>
+    <field name="code">env['mrp.production'].browse(env.context.get('active_ids', [])).action_ultra_erase_everything()</field>
+    <field name="binding_model_id" ref="mrp.model_mrp_production"/>
+    <field name="binding_type">action</field>
+  </record>
+</odoo>

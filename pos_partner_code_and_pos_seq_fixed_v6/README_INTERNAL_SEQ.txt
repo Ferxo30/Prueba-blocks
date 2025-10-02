@@ -1,0 +1,1 @@
+This build adds Order export patches so the POS receipt can print 'pos_internal_seq'.\n

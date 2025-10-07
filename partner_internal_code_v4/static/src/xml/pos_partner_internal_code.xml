@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Log mínimo para saber si el XML se cargó -->
+    <t t-name="partner_internal_code._loaded">
+        <t t-esc="console.log('[PIC] pos_partner_internal_code.xml cargado')"/>
+    </t>
+
+    <!-- Variante A (nombres comunes en Odoo 18): PartnerList / PartnerLine -->
+    <t t-name="partner_internal_code.PartnerListHeaderPatch" t-extend="point_of_sale.PartnerList">
+        <t t-jquery="thead tr" t-operation="append">
+            <th class="o_pos_col_internal_code">Código interno</th>
+        </t>
+    </t>
+    <t t-name="partner_internal_code.PartnerLinePatch" t-extend="point_of_sale.PartnerLine">
+        <t t-jquery="tr" t-operation="append">
+            <td class="o_pos_col_internal_code">
+                <t t-esc="props.partner.internal_code or ''"/>
+            </td>
+        </t>
+    </t>
+
+    <!-- Variante B (algunas builds usan ClientListScreen / ClientLine) -->
+    <t t-name="partner_internal_code.ClientListHeaderPatch" t-extend="point_of_sale.ClientListScreen">
+        <t t-jquery="thead tr" t-operation="append">
+            <th class="o_pos_col_internal_code">Código interno</th>
+        </t>
+    </t>
+    <t t-name="partner_internal_code.ClientLinePatch" t-extend="point_of_sale.ClientLine">
+        <t t-jquery="tr" t-operation="append">
+            <td class="o_pos_col_internal_code">
+                <t t-esc="props.partner.internal_code or ''"/>
+            </td>
+        </t>
+    </t>
+
+    <!-- Fallback: si las plantillas cambian, al menos muestra un badge junto al nombre -->
+    <t t-name="partner_internal_code.PartnerNameBadge" t-extend="point_of_sale.PartnerLine">
+        <t t-jquery="td:first" t-operation="append">
+            <span style="margin-left:8px; font-size:11px; opacity:0.7;">
+                <t t-esc="props.partner.internal_code and '[' + props.partner.internal_code + ']' or ''"/>
+            </span>
+        </t>
+    </t>
+    <t t-name="partner_internal_code.ClientNameBadge" t-extend="point_of_sale.ClientLine">
+        <t t-jquery="td:first" t-operation="append">
+            <span style="margin-left:8px; font-size:11px; opacity:0.7;">
+                <t t-esc="props.partner.internal_code and '[' + props.partner.internal_code + ']' or ''"/>
+            </span>
+        </t>
+    </t>
+
+</templates>

@@ -1,18 +1,23 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Partner Internal Code',
-    'summary': "Agrega campo 'Código interno' a contactos y permite búsqueda por ese código.",
-    'version': '18.0.1.0.5',
+    'summary': "Código interno secuencial para clientes; búsqueda y asignación masiva.",
+    'version': '18.0.2.0.1',
     'category': 'Contacts',
     'author': 'Blockera Bustamante / ChatGPT',
     'license': 'LGPL-3',
     'website': 'https://example.com',
-    'depends': ['base', 'contacts', 'point_of_sale'],   # <-- POS
-    'data': ['views/res_partner_views.xml'],
-    'assets': {                                         # <-- Assets POS
+    'depends': ['base', 'contacts', 'point_of_sale'],  # quita 'point_of_sale' si no lo usas
+    'data': [
+        'security/ir.model.access.csv',
+        'data/ir_sequence_data.xml',
+        'views/internal_code_wizard_views.xml',  # <-- primero
+        'views/res_partner_views.xml',           # <-- después
+    ],
+    'assets': {
         'point_of_sale.assets': [
             'partner_internal_code_v4/static/src/js/pos_partner_internal_code.js',
-            'partner_internal_code_v4/static/src/xml/pos_partner_internal_code.xml',
+            # No cargues ningún XML del POS por ahora
         ],
     },
     'installable': True,

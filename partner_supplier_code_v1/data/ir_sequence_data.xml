@@ -1,0 +1,10 @@
+<odoo noupdate="1">
+  <record id="seq_res_partner_supplier_code" model="ir.sequence">
+    <field name="name">Código Interno de Proveedor</field>
+    <field name="code">res.partner.vendor.code</field>
+    <field name="prefix">PRV-</field>
+    <field name="padding">5</field>
+    <field name="implementation">standard</field>
+    <field name="company_id" eval="False"/>
+  </record>
+</odoo>

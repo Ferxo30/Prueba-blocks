@@ -1,0 +1,50 @@
+<odoo>
+  <!-- FORM: campo + botón (creamos header si no existe) -->
+  <record id="view_partner_form_supplier_code" model="ir.ui.view">
+    <field name="name">res.partner.form.supplier.code</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <field name="arch" type="xml">
+      <!-- Campo visible solo a proveedores -->
+      <xpath expr="//field[@name='vat']" position="after">
+        <field name="supplier_code"
+               string="Código proveedor"
+               readonly="1"
+               attrs="{'invisible': [('supplier_rank','=',0)]}"/>
+      </xpath>
+
+      <!-- ⬇️ Si no existe <header>, lo inyectamos ANTES del <sheet> -->
+      <xpath expr="//sheet" position="before">
+        <header>
+          <button name="action_assign_supplier_code"
+                  string="Asignar código proveedor"
+                  type="object"
+                  class="oe_highlight"
+                  attrs="{'invisible': ['|', ('supplier_rank','=',0), ('supplier_code','!=',False)]}"/>
+        </header>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- TREE: columna opcional -->
+  <record id="view_partner_tree_supplier_code" model="ir.ui.view">
+    <field name="name">res.partner.tree.supplier.code</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_tree"/>
+    <field name="arch" type="xml">
+      <xpath expr="//field[@name='city']" position="before">
+        <field name="supplier_code" string="Código proveedor" optional="show"/>
+      </xpath>
+    </field>
+  </record>
+
+  <!-- ACCIÓN MASIVA en lista -->
+  <record id="res_partner_action_assign_supplier_codes_mass" model="ir.actions.server">
+    <field name="name">Asignar códigos proveedor…</field>
+    <field name="model_id" ref="base.model_res_partner"/>
+    <field name="binding_model_id" ref="base.model_res_partner"/>
+    <field name="binding_view_types">list</field>
+    <field name="state">object</field>
+    <field name="code">action = records.action_assign_supplier_code()</field>
+  </record>
+</odoo>

@@ -32,6 +32,8 @@
                                 <th>Tipo</th>
                                 <th>Fecha</th>
                                 <th>Doc</th>
+                                <th>Serie</th>
+                                <th>Numero</th>
                                 <th>Proveedor</th>
                                 <th>NIT</th>
                                 <th class="text-right">Comp.</th>
@@ -56,6 +58,12 @@
                                 </td>
                                 <td>
                                     <span t-esc="l['numero']"/>
+                                </td>
+                                 <td>
+                                    <span t-esc="l['serie_fel']"/>
+                                </td>
+                                 <td>
+                                    <span t-esc="l['numero_fel']"/>
                                 </td>
                                 <td>
                                     <span t-esc="l['proveedor'].name"/>

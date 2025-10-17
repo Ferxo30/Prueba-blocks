@@ -67,6 +67,8 @@ class ReporteCompras(models.AbstractModel):
                 'tipo': tipo,
                 'fecha': f.invoice_date,
                 'numero': numero,
+                'numero_fel': f.numero_fel,
+                'serie_fel': f.serie_fel,
                 'proveedor': f.partner_id,
                 'compra': 0,
                 'compra_exento': 0,

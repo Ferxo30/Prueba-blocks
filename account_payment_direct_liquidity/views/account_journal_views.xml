@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <record id="view_account_journal_form_direct_liquidity" model="ir.ui.view">
+    <field name="name">account.journal.form.direct.liquidity</field>
+    <field name="model">account.journal</field>
+    <field name="inherit_id" ref="account.view_account_journal_form"/>
+    <field name="arch" type="xml">
+      <xpath expr="//form/sheet" position="inside">
+        <group string="Pagos">
+          <field name="direct_liquidity_on_payment"/>
+        </group>
+      </xpath>
+    </field>
+  </record>
+</odoo>
+

@@ -298,6 +298,33 @@ class AccountMove(models.Model):
             else:
                 body += _(" (No fue posible actualizar el PDF en este momento).")
             move.message_post(body=body)
+        for move in self:
+            if not getattr(move, "requiere_certificacion", None) or not move.requiere_certificacion():
+                raise UserError(_("Este documento no requiere certificación FEL."))
+            usuario, apikey, modo = _get_creds(move)
+            is_test = _env_is_test(move, modo)
+            api_host = "dev2.api.ifacere-fel.com" if is_test else "apiv2.ifacere-fel.com"
+
+            # NO usar "_" como variable local aquí tampoco
+            token, __token_url, __raw_token_resp = _request_token(api_host, usuario, apikey)
+            original_uuid = getattr(move, 'firma_fel', False)
+            pdf_bytes = None
+
+            # 1) intentar con UUID original (payload mínimo)
+            if original_uuid:
+                pdf_bytes = _retornar_pdf_v2(api_host, token, original_uuid)
+
+            # 2) plan B: UUID de anulación tomado del chatter
+            if not pdf_bytes:
+                annul_uuid = _extract_annul_uuid_from_chatter(move)
+                if annul_uuid:
+                    pdf_bytes = _retornar_pdf_v2(api_host, token, annul_uuid)
+
+            if not pdf_bytes:
+                raise UserError(_("No fue posible obtener el PDF desde Megaprint. Verifique el UUID y el servicio RetornarPDF."))
+
+            _save_pdf_on_move(move, pdf_bytes, f"fel_actualizado_{(original_uuid or 'doc')}.pdf")
+            move.message_post(body=_("PDF FEL actualizado desde Megaprint."))
         return True
 
     # --------- Botón: refrescar/actualizar PDF FEL (manual) ---------

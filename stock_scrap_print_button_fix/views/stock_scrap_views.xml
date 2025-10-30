@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_stock_scrap_form_inherit_print" model="ir.ui.view">
+        <field name="name">stock.scrap.form.print.button</field>
+        <field name="model">stock.scrap</field>
+        <field name="inherit_id" ref="stock.stock_scrap_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="action_print_scrap"
+                        string="Imprimir desecho"
+                        type="object"
+                        class="btn-primary oe_highlight"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Acción de reporte QWeb para stock.scrap -->
+    <report
+        id="action_report_stock_scrap"
+        model="stock.scrap"
+        string="Orden de Desecho"
+        report_type="qweb-pdf"
+        name="stock_scrap_print_button_fix.report_stock_scrap_document"
+        file="stock_scrap_print_button_fix.report_stock_scrap_document"
+        print_report_name="'SCRAP-%s' % (object.name or '')"
+    />
+
+    <!-- Plantilla QWeb del PDF -->
+    <template id="report_stock_scrap_document">
+        <t t-call="web.basic_layout">
+            <t t-set="doc" t-value="docs and docs[0]"/>
+            <t t-set="company" t-value="doc.company_id"/>
+            <!-- Si te quedas con web.basic_layout, inserta esto dentro de <div class="page">, arriba -->
+<div class="d-flex align-items-center mb8">
+    <img t-att-src="'/web/image/res.company/%s/logo' % (doc.company_id.id or env.company.id)"
+         style="max-height: 45px; margin-right: 8px;"/>
+    <h3 class="m-0"><span t-esc="(doc.company_id or env.company).name"/></h3>
+</div>
+
+            <div class="page">
+                <h2>Orden de Desecho</h2>
+
+                <table class="table table-sm mt16">
+                    <tbody>
+                        <tr>
+                            <td><strong>Nombre:</strong></td>
+                            <td><span t-esc="doc.name"/></td>
+                            <td><strong>Fecha:</strong></td>
+                            <td><span t-esc="doc.date_done or doc.create_date"/></td>
+                        </tr>
+                        <tr>
+                            <td><strong>Compañía:</strong></td>
+                            <td><span t-esc="company.name"/></td>
+                            <td><strong>Ubicación:</strong></td>
+                            <td><span t-esc="doc.location_id.display_name"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3 class="mt16">Líneas</h3>
+                <table class="table table-sm o_main_table">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            
+                            <th>Cantidad</th>
+                            <th>UoM</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span t-esc="doc.product_id.display_name"/></td>
+                            <span t-esc="doc._fields.get('reason_id') and (doc.reason_id.display_name or '') or (doc.origin or '')"/>
+                            <td style="text-align:right;"><span t-esc="doc.scrap_qty"/></td>
+                            <td><span t-esc="doc.product_uom_id.name"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="mt24">
+                    <table class="table table-sm">
+                        <tbody>
+                            <tr>
+                                <td style="width:33%; text-align:center;">
+                                    ___________________________<br/>Solicitó
+                                </td>
+                                <td style="width:33%; text-align:center;">
+                                    ___________________________<br/>Autorizó
+                                </td>
+                                <td style="width:33%; text-align:center;">
+                                    ___________________________<br/>Ejecutó
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

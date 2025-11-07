@@ -2,9 +2,8 @@
 
 {
     'name': 'FEL Megaprint',
-    'version': '1.1',
+    'version': '1.0',
     'category': 'Custom',
-    'license': 'LGPL-3',
     'description': """ Integración con factura electrónica de Megaprint """,
     'author': 'Rodrigo Fernandez',
     'website': 'http://solucionesprisma.com/',

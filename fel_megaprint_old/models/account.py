@@ -48,7 +48,7 @@ class AccountInvoice(models.Model):
                     data = '<?xml version="1.0" encoding="UTF-8"?><SolicitaTokenRequest><usuario>{}</usuario><apikey>{}</apikey></SolicitaTokenRequest>'.format(
                         factura.journal_id.usuario_fel, factura.journal_id.clave_fel)
                     r = requests.post('https://' + request_url + '.ifacere-fel.com/' + request_path + 'api/solicitarToken',
-                                      data=data.encode('utf-8'), timeout=(5, 30), headers=headers)
+                                      data=data.encode('utf-8'), headers=headers)
                     _logger.warning(r.text)
                     resultadoXML = etree.XML(bytes(r.text, encoding='utf-8'))
 
@@ -57,32 +57,12 @@ class AccountInvoice(models.Model):
                         uuid_factura = str(uuid.uuid5(uuid.NAMESPACE_OID, str(factura.id))).upper()
 
                         headers = {"Content-Type": "application/xml", "authorization": "Bearer " + token}
-
-                        # --- PRECHECK Idempotencia: verificar si ya existe por ID (evita duplicados) ---
-                        try:
-                            vdata = '<?xml version="1.0" encoding="UTF-8"?><VerificaDocumentoRequest id="{}"/>'.format(uuid_factura)
-                            rv = requests.post('https://' + request_url + '.ifacere-fel.com/' + request_path + 'api/verificarDocumento',
-                                               data=vdata.encode('utf-8'), headers=headers, timeout=(5, 15))
-                            vxml = etree.XML(rv.text.encode('utf-8'))
-                            vnode = vxml.xpath("//xml_dte")
-                            if vnode:
-                                xml_certificado = vnode[0].text
-                                xml_certificado_root = etree.XML(bytes(xml_certificado, encoding='utf-8'))
-                                numero_autorizacion = xml_certificado_root.find(".//{http://www.sat.gob.gt/dte/fel/0.2.0}NumeroAutorizacion")
-                                if numero_autorizacion is not None:
-                                    factura.firma_fel = numero_autorizacion.text
-                                    factura.serie_fel = numero_autorizacion.get("Serie")
-                                    factura.numero_fel = numero_autorizacion.get("Numero")
-                                    _logger.info("[FEL] Documento ya certificado (verificarDocumento por id=%s), se evita reenvío.", uuid_factura)
-                                    return
-                        except Exception as e:
-                            _logger.warning("[FEL] verificarDocumento precheck falló: %s", e)
                         _logger.warning(headers)
                         data = '<?xml version="1.0" encoding="UTF-8"?><FirmaDocumentoRequest id="{}"><xml_dte><![CDATA[{}]]></xml_dte></FirmaDocumentoRequest>'.format(
                             uuid_factura, xml_sin_firma)
                         _logger.warning(data)
                         r = requests.post('https://' + request_url_firma + 'api.soluciones-mega.com/api/solicitaFirma',
-                                          data=data.encode('utf-8'), timeout=(5, 30), headers=headers)
+                                          data=data.encode('utf-8'), headers=headers)
                         _logger.warning(r.text)
                         resultadoXML = etree.XML(bytes(r.text, encoding='utf-8'))
 
@@ -90,56 +70,14 @@ class AccountInvoice(models.Model):
                             xml_con_firma = resultadoXML.xpath("//xml_dte")[0].text
 
                             headers = {"Content-Type": "application/xml", "authorization": "Bearer " + token}
-                            data = '<?xml version="1.0" encoding="UTF-8"?><RegistraDocumentoRequest id="{}"><xml_dte><![CDATA[{}]]></xml_dte></RegistraDocumentoRequest>'.format(
+                            data = '<?xml version="1.0" encoding="UTF-8"?><RegistraDocumentoXMLRequest id="{}"><xml_dte><![CDATA[{}]]></xml_dte></RegistraDocumentoXMLRequest>'.format(
                                 uuid_factura, xml_con_firma)
                             _logger.warning(data)
-                            r = requests.post('https://' + request_url + '.ifacere-fel.com/' + request_path + 'api/registrarDocumentoUuid',
-                                              data=data.encode('utf-8'), timeout=(5, 30), headers=headers)
+                            r = requests.post('https://' + request_url + '.ifacere-fel.com/' + request_path + 'api/registrarDocumentoXML',
+                                              data=data.encode('utf-8'), headers=headers)
                             resultadoXML = etree.XML(bytes(r.text, encoding='utf-8'))
 
-                            
-                            # --- FALLBACK: si no viene xml_dte, consultar por ID para evitar reenvío ---
-                            # --- RESCATE POR UUID cuando verificarDocumento devuelve tipo_respuesta=0 pero entrega <uuid> ---
-                            try:
-                                try:
-                                    xml_nodes_present = len(resultadoXML.xpath("//xml_dte")) > 0
-                                except Exception:
-                                    xml_nodes_present = False
-                                if not xml_nodes_present:
-                                    vdata2 = '<?xml version="1.0" encoding="UTF-8"?><VerificaDocumentoRequest id="{}"/>'.format(uuid_factura)
-                                    rv2 = requests.post('https://' + request_url + '.ifacere-fel.com/' + request_path + 'api/verificarDocumento',
-                                                        data=vdata2.encode('utf-8'), headers=headers, timeout=(5, 12))
-                                    vxml2 = etree.XML(rv2.text.encode('utf-8'))
-                                    tipo = (vxml2.findtext(".//tipo_respuesta") or "").strip()
-                                    uuid_dte = (vxml2.findtext(".//uuid") or "").strip()
-                                    if tipo == "0" and uuid_dte:
-                                        data_rx = '<?xml version="1.0" encoding="UTF-8"?><RetornaXMLRequest><uuid>{}</uuid></RetornaXMLRequest>'.format(uuid_dte)
-                                        rrx = requests.post('https://' + request_url + '.ifacere-fel.com/' + request_path + 'api/retornarXML',
-                                                            data=data_rx.encode('utf-8'), headers=headers, timeout=(5, 15))
-                                        vxml3 = etree.XML(rrx.text.encode('utf-8'))
-                                        if len(vxml3.xpath("//xml_dte")):
-                                            resultadoXML = vxml3
-                                            _logger.info("[FEL] Recuperado via retornarXML por uuid=%s", uuid_dte)
-                            except Exception as e:
-                                _logger.warning("[FEL] Rescate por UUID falló: %s", e)
-
-                            try:
-                                if len(resultadoXML.xpath("//xml_dte")) == 0:
-                                    vdata = '<?xml version="1.0" encoding="UTF-8"?><VerificaDocumentoRequest id="{}"/>'.format(uuid_factura)
-                                    rv = requests.post('https://' + request_url + '.ifacere-fel.com/' + request_path + 'api/verificarDocumento',
-                                                       data=vdata.encode('utf-8'), headers=headers, timeout=(5, 15))
-                                    vxml = etree.XML(rv.text.encode('utf-8'))
-                                    vnode = vxml.xpath("//xml_dte")
-                                    if vnode:
-                                        resultadoXML = vxml
-                                        _logger.info("[FEL] Recuperado via verificarDocumento por id=%s", uuid_factura)
-                            except Exception as e:
-                                _logger.warning("[FEL] verificarDocumento fallback falló: %s", e)
                             if len(resultadoXML.xpath("//listado_errores")) == 0:
-                                if len(resultadoXML.xpath("//xml_dte")) == 0:
-                                    raise UserError('No se recibió xml_dte del certificador para id=%s. No se reenvió para evitar duplicados; intente consultar en segundos.' % uuid_factura)
-                                
-                                # Si hay xml_dte, continuar
                                 xml_certificado = resultadoXML.xpath("//xml_dte")[0].text
                                 xml_certificado_root = etree.XML(bytes(xml_certificado, encoding='utf-8'))
                                 numero_autorizacion = xml_certificado_root.find(".//{http://www.sat.gob.gt/dte/fel/0.2.0}NumeroAutorizacion")
@@ -150,11 +88,10 @@ class AccountInvoice(models.Model):
                                 factura.numero_fel = numero_autorizacion.get("Numero")
 
                                 headers = {"Content-Type": "application/xml", "authorization": "Bearer " + token}
-                                factura.flush()
                                 data = '<?xml version="1.0" encoding="UTF-8"?><RetornaPDFRequest><uuid>{}</uuid></RetornaPDFRequest>'.format(
                                     factura.firma_fel)
                                 r = requests.post('https://' + request_url + '.ifacere-fel.com/' + request_path + 'api/retornarPDF',
-                                                  data=data, headers=headers, timeout=(5, 45))
+                                                  data=data, headers=headers)
                                 resultadoXML = etree.XML(bytes(r.text, encoding='utf-8'))
                                 if len(resultadoXML.xpath("//listado_errores")) == 0:
                                     pdf = resultadoXML.xpath("//pdf")[0].text
@@ -194,7 +131,7 @@ class AccountInvoice(models.Model):
                     data = '<?xml version="1.0" encoding="UTF-8"?><SolicitaTokenRequest><usuario>{}</usuario><apikey>{}</apikey></SolicitaTokenRequest>'.format(
                         factura.journal_id.usuario_fel, factura.journal_id.clave_fel)
                     r = requests.post('https://' + request_url + '.ifacere-fel.com/' + request_path + 'api/solicitarToken',
-                                      data=data.encode('utf-8'), timeout=(5, 30), headers=headers)
+                                      data=data.encode('utf-8'), headers=headers)
                     resultadoXML = etree.XML(bytes(r.text, encoding='utf-8'))
 
                     if len(resultadoXML.xpath("//token")) > 0:
@@ -202,30 +139,10 @@ class AccountInvoice(models.Model):
                         uuid_factura = str(uuid.uuid5(uuid.NAMESPACE_OID, str(factura.id))).upper()
 
                         headers = {"Content-Type": "application/xml", "authorization": "Bearer " + token}
-
-                        # --- PRECHECK Idempotencia: verificar si ya existe por ID (evita duplicados) ---
-                        try:
-                            vdata = '<?xml version="1.0" encoding="UTF-8"?><VerificaDocumentoRequest id="{}"/>'.format(uuid_factura)
-                            rv = requests.post('https://' + request_url + '.ifacere-fel.com/' + request_path + 'api/verificarDocumento',
-                                               data=vdata.encode('utf-8'), headers=headers, timeout=(5, 15))
-                            vxml = etree.XML(rv.text.encode('utf-8'))
-                            vnode = vxml.xpath("//xml_dte")
-                            if vnode:
-                                xml_certificado = vnode[0].text
-                                xml_certificado_root = etree.XML(bytes(xml_certificado, encoding='utf-8'))
-                                numero_autorizacion = xml_certificado_root.find(".//{http://www.sat.gob.gt/dte/fel/0.2.0}NumeroAutorizacion")
-                                if numero_autorizacion is not None:
-                                    factura.firma_fel = numero_autorizacion.text
-                                    factura.serie_fel = numero_autorizacion.get("Serie")
-                                    factura.numero_fel = numero_autorizacion.get("Numero")
-                                    _logger.info("[FEL] Documento ya certificado (verificarDocumento por id=%s), se evita reenvío.", uuid_factura)
-                                    return
-                        except Exception as e:
-                            _logger.warning("[FEL] verificarDocumento precheck falló: %s", e)
                         data = '<?xml version="1.0" encoding="UTF-8"?><FirmaDocumentoRequest id="{}"><xml_dte><![CDATA[{}]]></xml_dte></FirmaDocumentoRequest>'.format(
                             uuid_factura, xml_sin_firma)
                         r = requests.post('https://' + request_url_firma + 'api.soluciones-mega.com/api/solicitaFirma',
-                                          data=data.encode('utf-8'), timeout=(5, 30), headers=headers)
+                                          data=data.encode('utf-8'), headers=headers)
                         _logger.warning(r.text)
                         resultadoXML = etree.XML(bytes(r.text, encoding='utf-8'))
                         if len(resultadoXML.xpath("//xml_dte")) > 0:
@@ -236,7 +153,7 @@ class AccountInvoice(models.Model):
                                 uuid_factura, xml_con_firma)
                             _logger.warning(data)
                             r = requests.post('https://' + request_url + '.ifacere-fel.com/' + request_path + 'api/anularDocumentoXML',
-                                              data=data.encode('utf-8'), timeout=(5, 30), headers=headers)
+                                              data=data.encode('utf-8'), headers=headers)
                             resultadoXML = etree.XML(bytes(r.text, encoding='utf-8'))
 
                             if len(resultadoXML.xpath("//listado_errores")) > 0:

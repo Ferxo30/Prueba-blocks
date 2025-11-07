@@ -62,7 +62,7 @@ class AccountInvoice(models.Model):
                         try:
                             vdata = '<?xml version="1.0" encoding="UTF-8"?><VerificaDocumentoRequest id="{}"/>'.format(uuid_factura)
                             rv = requests.post('https://' + request_url + '.ifacere-fel.com/' + request_path + 'api/verificarDocumento',
-                                               data=vdata.encode('utf-8'), headers=headers, timeout=(5, 15))
+                                               data=vdata.encode('utf-8', timeout=(5, 30)), headers=headers, timeout=(5, 15))
                             vxml = etree.XML(rv.text.encode('utf-8'))
                             vnode = vxml.xpath("//xml_dte")
                             if vnode:
@@ -99,30 +99,6 @@ class AccountInvoice(models.Model):
 
                             
                             # --- FALLBACK: si no viene xml_dte, consultar por ID para evitar reenvío ---
-                            # --- RESCATE POR UUID cuando verificarDocumento devuelve tipo_respuesta=0 pero entrega <uuid> ---
-                            try:
-                                try:
-                                    xml_nodes_present = len(resultadoXML.xpath("//xml_dte")) > 0
-                                except Exception:
-                                    xml_nodes_present = False
-                                if not xml_nodes_present:
-                                    vdata2 = '<?xml version="1.0" encoding="UTF-8"?><VerificaDocumentoRequest id="{}"/>'.format(uuid_factura)
-                                    rv2 = requests.post('https://' + request_url + '.ifacere-fel.com/' + request_path + 'api/verificarDocumento',
-                                                        data=vdata2.encode('utf-8'), headers=headers, timeout=(5, 12))
-                                    vxml2 = etree.XML(rv2.text.encode('utf-8'))
-                                    tipo = (vxml2.findtext(".//tipo_respuesta") or "").strip()
-                                    uuid_dte = (vxml2.findtext(".//uuid") or "").strip()
-                                    if tipo == "0" and uuid_dte:
-                                        data_rx = '<?xml version="1.0" encoding="UTF-8"?><RetornaXMLRequest><uuid>{}</uuid></RetornaXMLRequest>'.format(uuid_dte)
-                                        rrx = requests.post('https://' + request_url + '.ifacere-fel.com/' + request_path + 'api/retornarXML',
-                                                            data=data_rx.encode('utf-8'), headers=headers, timeout=(5, 15))
-                                        vxml3 = etree.XML(rrx.text.encode('utf-8'))
-                                        if len(vxml3.xpath("//xml_dte")):
-                                            resultadoXML = vxml3
-                                            _logger.info("[FEL] Recuperado via retornarXML por uuid=%s", uuid_dte)
-                            except Exception as e:
-                                _logger.warning("[FEL] Rescate por UUID falló: %s", e)
-
                             try:
                                 if len(resultadoXML.xpath("//xml_dte")) == 0:
                                     vdata = '<?xml version="1.0" encoding="UTF-8"?><VerificaDocumentoRequest id="{}"/>'.format(uuid_factura)
@@ -136,10 +112,6 @@ class AccountInvoice(models.Model):
                             except Exception as e:
                                 _logger.warning("[FEL] verificarDocumento fallback falló: %s", e)
                             if len(resultadoXML.xpath("//listado_errores")) == 0:
-                                if len(resultadoXML.xpath("//xml_dte")) == 0:
-                                    raise UserError('No se recibió xml_dte del certificador para id=%s. No se reenvió para evitar duplicados; intente consultar en segundos.' % uuid_factura)
-                                
-                                # Si hay xml_dte, continuar
                                 xml_certificado = resultadoXML.xpath("//xml_dte")[0].text
                                 xml_certificado_root = etree.XML(bytes(xml_certificado, encoding='utf-8'))
                                 numero_autorizacion = xml_certificado_root.find(".//{http://www.sat.gob.gt/dte/fel/0.2.0}NumeroAutorizacion")
@@ -207,7 +179,7 @@ class AccountInvoice(models.Model):
                         try:
                             vdata = '<?xml version="1.0" encoding="UTF-8"?><VerificaDocumentoRequest id="{}"/>'.format(uuid_factura)
                             rv = requests.post('https://' + request_url + '.ifacere-fel.com/' + request_path + 'api/verificarDocumento',
-                                               data=vdata.encode('utf-8'), headers=headers, timeout=(5, 15))
+                                               data=vdata.encode('utf-8', timeout=(5, 30)), headers=headers, timeout=(5, 15))
                             vxml = etree.XML(rv.text.encode('utf-8'))
                             vnode = vxml.xpath("//xml_dte")
                             if vnode:

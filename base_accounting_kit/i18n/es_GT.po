@@ -1,0 +1,143 @@
+# Translation of Odoo Module: base_accounting_kit
+# Language: es_GT
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo 18.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-11 00:00+0000\n"
+"PO-Revision-Date: 2025-11-11 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: Spanish (Guatemala)\n"
+"Language: es_GT\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+# ----------------------------
+# Wizard / Acción / Menú
+# ----------------------------
+#. module: base_accounting_kit
+msgid "Partner Ledger Report"
+msgstr "Estado de cuenta de clientes/proveedores"
+
+#. module: base_accounting_kit
+msgid "Partner Ledger"
+msgstr "Estado de cuenta (partners)"
+
+#. module: base_accounting_kit
+msgid "With Currency"
+msgstr "Con moneda"
+
+#. module: base_accounting_kit
+msgid "Reconciled Entries"
+msgstr "Partidas conciliadas"
+
+#. module: base_accounting_kit
+msgid "Target Moves"
+msgstr "Movimientos objetivo"
+
+#. module: base_accounting_kit
+msgid "All Entries"
+msgstr "Todos los asientos"
+
+#. module: base_accounting_kit
+msgid "All Posted Entries"
+msgstr "Solo asientos publicados"
+
+#. module: base_accounting_kit
+msgid "Partner's"
+msgstr "Tipo de partner"
+
+#. module: base_accounting_kit
+msgid "Receivable Accounts"
+msgstr "Cuentas por cobrar"
+
+#. module: base_accounting_kit
+msgid "Payable Accounts"
+msgstr "Cuentas por pagar"
+
+#. module: base_accounting_kit
+msgid "Receivable and Payable"
+msgstr "Cuentas por cobrar y por pagar"
+
+#. module: base_accounting_kit
+msgid "Date From"
+msgstr "Fecha inicio"
+
+#. module: base_accounting_kit
+msgid "Date To"
+msgstr "Fecha fin"
+
+#. module: base_accounting_kit
+msgid "Journals"
+msgstr "Diarios"
+
+#. module: base_accounting_kit
+msgid "Partners"
+msgstr "Clientes/Proveedores"
+
+# ----------------------------
+# Reporte QWeb: encabezados y leyendas
+# ----------------------------
+#. module: base_accounting_kit
+msgid "Company:"
+msgstr "Compañía:"
+
+#. module: base_accounting_kit
+msgid "Date from :"
+msgstr "Fecha inicio:"
+
+#. module: base_accounting_kit
+msgid "Date to :"
+msgstr "Fecha fin:"
+
+#. module: base_accounting_kit
+msgid "Date"
+msgstr "Fecha"
+
+#. module: base_accounting_kit
+msgid "JRNL"
+msgstr "Diario"
+
+#. module: base_accounting_kit
+msgid "Ref"
+msgstr "Referencia"
+
+#. module: base_accounting_kit
+msgid "Debit"
+msgstr "Débito"
+
+#. module: base_accounting_kit
+msgid "Credit"
+msgstr "Crédito"
+
+#. module: base_accounting_kit
+msgid "Balance"
+msgstr "Saldo"
+
+#. module: base_accounting_kit
+msgid "Currency"
+msgstr "Moneda"
+
+# ----------------------------
+# Acción de informe (si existe así en tu módulo)
+# ----------------------------
+#. module: base_accounting_kit
+msgid "Partner Ledger PDF"
+msgstr "Estado de cuenta (PDF)"
+
+#. module: base_accounting_kit
+msgid "Partner Ledger QWeb"
+msgstr "Estado de cuenta (QWeb)"
+
+# ----------------------------
+# Ayudas / tooltips del wizard
+# ----------------------------
+#. module: base_accounting_kit
+msgid "It adds the currency column on report if the currency differs from the company currency."
+msgstr "Agrega la columna de moneda si difiere de la moneda de la compañía."
+
+#. module: base_accounting_kit
+msgid "If set, the report will be limited to the selected partners."
+msgstr "Si se establece, el reporte se limitará a los partners seleccionados."

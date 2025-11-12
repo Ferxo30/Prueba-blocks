@@ -27,26 +27,50 @@ class AccountPartnerLedger(models.TransientModel):
     _inherit = "account.common.partner.report"
     _description = "Account Partner Ledger"
 
-    section_main_report_ids = fields.Many2many(string="Section Of",
-                                               comodel_name='account.report',
-                                               relation="account_report_partner_section_rel",
-                                               column1="sub_report_id",
-                                               column2="main_report_id")
-    section_report_ids = fields.Many2many(string="Sections",
-                                          comodel_name='account.report',
-                                          relation="account_report_partner_section_rel",
-                                          column1="main_report_id",
-                                          column2="sub_report_id")
-    name = fields.Char(string="Partner Ledger Report", default="Partner Ledger Report", required=True, translate=True)
-    amount_currency = fields.Boolean("With Currency",
-                                     help="It adds the currency column on report if the "
-                                          "currency differs from the company currency.")
+    section_main_report_ids = fields.Many2many(
+        string="Section Of",
+        comodel_name='account.report',
+        relation="account_report_partner_section_rel",
+        column1="sub_report_id",
+        column2="main_report_id",
+    )
+    section_report_ids = fields.Many2many(
+        string="Sections",
+        comodel_name='account.report',
+        relation="account_report_partner_section_rel",
+        column1="main_report_id",
+        column2="sub_report_id",
+    )
+
+    name = fields.Char(
+        string="Partner Ledger Report",
+        default="Partner Ledger Report",
+        required=True,
+        translate=True,
+    )
+
+    amount_currency = fields.Boolean(
+        "With Currency",
+        help="It adds the currency column on report if the currency differs from the company currency.",
+    )
     reconciled = fields.Boolean('Reconciled Entries')
+
+    partner_ids = fields.Many2many(
+        'res.partner',
+        'account_report_partner_ledger_partner_rel',
+        'wizard_id', 'partner_id',
+        string="Clientes/Proveedores",
+        help="Si se establece, el reporte se limitará a los partners seleccionados.",
+    )
 
     def _print_report(self, data):
         data = self.pre_print_report(data)
-        data['form'].update({'reconciled': self.reconciled,
-                             'amount_currency': self.amount_currency})
+        data['form'].update({
+            'reconciled': self.reconciled,
+            'amount_currency': self.amount_currency,
+            # pasar los IDs seleccionados al motor del reporte
+            'partner_ids': self.partner_ids.ids,
+        })
         return self.env.ref(
-            'base_accounting_kit.action_report_partnerledger').report_action(
-            self, data=data)
+            'base_accounting_kit.action_report_partnerledger'
+        ).report_action(self, data=data)

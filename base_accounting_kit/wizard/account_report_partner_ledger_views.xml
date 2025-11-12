@@ -1,21 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-<!--Account Report Partner Ledger Form View-->
+    <!-- Insertamos SOLO partner_ids, en una FILA nueva y ocupando ambas columnas -->
     <record id="account_report_partner_ledger_view" model="ir.ui.view">
         <field name="name">account.report.partner.ledger.view.form.inherit.base.accounting.kit</field>
         <field name="model">account.report.partner.ledger</field>
         <field name="inherit_id" ref="base_accounting_kit.account_report_view_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='target_move']" position="after">
-                <field name="result_selection"/>
-                <field name="amount_currency" groups="base.group_multi_currency"/>
+                <!-- Fila nueva para no romper la grilla -->
                 <newline/>
-                <field name="reconciled"/>
-                <newline/>
+                <field name="partner_ids"
+                       colspan="2"
+                       widget="many2many_tags"
+                       options="{'no_create_edit': True}"/>
+                <!-- sin domain => lista TODOS los contactos de tu compañía (personas y empresas).
+                     Si en multicompañía quieres forzar a la compañía actual: 
+                     agrega domain="[('company_id','in',[False, company_id])]" -->
             </xpath>
         </field>
     </record>
-<!--Action Account Report Partner Ledger-->
+
     <record id="action_partner_leadger" model="ir.actions.act_window">
         <field name="name">Partner Ledger</field>
         <field name="res_model">account.report.partner.ledger</field>
@@ -24,7 +28,7 @@
         <field name="view_id" ref="account_report_partner_ledger_view"/>
         <field name="target">new</field>
     </record>
-<!--Menu Partner Ledger-->
+
     <menuitem name="Partner Ledger"
               id="menu_partner_ledger" sequence="1"
               parent="base_accounting_kit.account_reports_partner"

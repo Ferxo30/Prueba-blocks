@@ -57,7 +57,7 @@ class ResPartner(models.Model):
         if name:
             recs = self.search(["|", ("internal_code", operator, name), ("name", operator, name)] + args, limit=limit)
             if recs:
-                return recs.name_get()
+                return [(r.id, r.display_name) for r in recs]
         return super().name_search(name=name, args=args, operator=operator, limit=limit)
 class ResPartner(models.Model):
     _inherit = "res.partner"

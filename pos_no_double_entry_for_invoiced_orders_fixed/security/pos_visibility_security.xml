@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <record id="group_pos_see_closing_moves" model="res.groups">
+    <field name="name">Ver cierres POS</field>
+    <field name="category_id" ref="base.module_category_accounting_and_finance"/>
+    <!-- opcional: que por defecto solo el admin lo tenga -->
+    <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+  </record>
+</odoo>

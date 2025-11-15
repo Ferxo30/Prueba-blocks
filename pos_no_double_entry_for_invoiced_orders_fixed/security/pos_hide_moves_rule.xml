@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Ocultar ASIENTOS de cierre POS para todos los usuarios internos -->
+  <record id="rule_hide_poss_moves_all" model="ir.rule">
+    <field name="name">Hide POS closing moves</field>
+    <field name="model_id" ref="account.model_account_move"/>
+    <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    <field name="domain_force">[('is_poss_move', '=', False)]</field>
+  </record>
+</odoo>

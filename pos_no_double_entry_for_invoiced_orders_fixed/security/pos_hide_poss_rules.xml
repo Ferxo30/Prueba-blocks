@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+  <!-- Asientos: ocultar cierres POS excepto para el grupo "Ver cierres POS" -->
+  <record id="rule_hide_poss_moves_all" model="ir.rule">
+    <field name="name">Hide POS closing moves (conditional)</field>
+    <field name="model_id" ref="account.model_account_move"/>
+    <!-- SIN groups => regla GLOBAL -->
+    <field name="domain_force">user.has_group('pos_no_double_entry_for_invoiced_orders_fixed.group_pos_see_closing_moves') and [(1, '=', 1)] or [('name', 'not ilike', 'POSS/')]</field>
+  </record>
+
+  <!-- Apuntes: ocultar líneas de esos asientos (igual que antes) -->
+  <record id="rule_hide_poss_move_lines_all" model="ir.rule">
+    <field name="name">Hide lines of POS closing moves</field>
+    <field name="model_id" ref="account.model_account_move_line"/>
+    <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    <field name="domain_force">[('move_id.is_poss_move','=',False)]</field>
+  </record>
+</odoo>

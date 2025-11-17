@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Herencia de la vista de la orden POS:
+         agrega la leyenda de estado de pago y el botón del wizard -->
+    <record id="view_pos_order_form_manual_payment" model="ir.ui.view">
+        <field name="name">pos.order.form.manual.payment</field>
+        <field name="model">pos.order</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <!-- Leyenda de estado de pago -->
+                <field name="payment_state"
+                       widget="statusbar"
+                       statusbar_visible="not_paid,partial,paid"/>
+
+                <!-- Botón del wizard -->
+                <button name="action_open_pos_order_payment_wizard"
+                        type="object"
+                        string="Registrar pago"
+                        class="oe_highlight"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Herencia de la vista de pagos POS:
+         agrega la columna Referencia (name) en el listado de pagos -->
+    <record id="view_pos_payment_tree_manual_note" model="ir.ui.view">
+        <field name="name">pos.payment.tree.manual.note</field>
+        <field name="model">pos.payment</field>
+        <field name="inherit_id" ref="point_of_sale.view_pos_payment_tree"/>
+        <field name="arch" type="xml">
+            <!-- En Odoo 18 esta vista ya no usa <tree>, sino <list> -->
+            <xpath expr="//list" position="inside">
+                <field name="name" string="Referencia"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

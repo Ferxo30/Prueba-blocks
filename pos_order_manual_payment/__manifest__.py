@@ -5,7 +5,7 @@
     'summary': 'Registrar pagos manuales en órdenes POS con Cuenta de cliente sin factura.',
     'category': 'Point of Sale',
     'author': 'Custom',
-    'depends': ['point_of_sale', 'skit_pay_later'],
+    'depends': ['point_of_sale'],
     'data': [
         'security/ir.model.access.csv',
         'wizard/pos_order_payment_wizard_views.xml',

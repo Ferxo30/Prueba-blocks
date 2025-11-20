@@ -14,7 +14,7 @@
         'report/pos_manual_payment_report.xml', 
         'wizard/pos_order_statement_wizard_views.xml',
         'report/pos_order_statement_report.xml',
-        'report/pos_order_statement_templates.xml'
+        #'report/pos_order_statement_templates.xml'
     ],
     "installable": True,
     "application": False,

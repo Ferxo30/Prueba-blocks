@@ -1,40 +1,91 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
-    <!-- Herencia de la vista de la orden POS:
-         agrega la leyenda de estado de pago y el botón del wizard -->
+    <!-- LISTA para los pagos manuales (modelo pos.order.payment) -->
+    <record id="view_pos_order_payment_tree" model="ir.ui.view">
+        <field name="name">pos.order.payment.list</field>
+        <field name="model">pos.order.payment</field>
+        <field name="type">list</field>
+        <field name="arch" type="xml">
+            <list string="Pagos POS" editable="bottom">
+                <field name="date"/>
+                <field name="payment_method_id"/>
+                <field name="journal_id"/>
+                <field name="amount"/>
+                <field name="reference"/>
+                <field name="note"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vista heredada de pos.order: botón y pestaña de Pagos POS -->
     <record id="view_pos_order_form_manual_payment" model="ir.ui.view">
         <field name="name">pos.order.form.manual.payment</field>
         <field name="model">pos.order</field>
         <field name="inherit_id" ref="point_of_sale.view_pos_pos_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//header" position="inside">
-                <!-- Leyenda de estado de pago -->
-                <field name="payment_state"
-                       widget="statusbar"
-                       statusbar_visible="not_paid,partial,paid"/>
 
-                <!-- Botón del wizard -->
+            <!-- Botón en el header:
+                 - Se oculta si:
+                   * la orden está facturada (state = 'invoiced'), o
+                   * NO aplica la lógica de cuenta de cliente (show_manual_payment_features = False), o
+                   * ya está totalmente pagada por Pagos POS (manual_payment_state = 'paid')
+            -->
+            <xpath expr="//header" position="inside">
                 <button name="action_open_pos_order_payment_wizard"
                         type="object"
-                        string="Registrar pago"
-                        class="oe_highlight"/>
+                        string="Registrar pago POS"
+                        class="oe_highlight"
+                        invisible="state in ['invoiced'] or not show_manual_payment_features or manual_payment_state == 'paid'"/>
             </xpath>
+
+            <!-- Pestaña Pagos POS: se oculta solo si la orden está facturada
+                 (la pestaña sí puede seguir visible cuando ya está totalmente pagada) -->
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="Pagos POS"
+                      invisible="state in ['invoiced'] or not show_manual_payment_features">
+                    <group>
+                        <field name="manual_payment_state" readonly="1"/>
+                        <field name="manual_paid_amount" readonly="1"/>
+                        <field name="amount_total" readonly="1"/>
+                    </group>
+
+                    <field name="manual_payment_ids"
+                           context="{'tree_view_ref': 'pos_order_manual_payment.view_pos_order_payment_tree'}"/>
+                </page>
+            </xpath>
+
         </field>
     </record>
 
-    <!-- Herencia de la vista de pagos POS:
-         agrega la columna Referencia (name) en el listado de pagos -->
-    <record id="view_pos_payment_tree_manual_note" model="ir.ui.view">
-        <field name="name">pos.payment.tree.manual.note</field>
-        <field name="model">pos.payment</field>
-        <field name="inherit_id" ref="point_of_sale.view_pos_payment_tree"/>
+    <!-- Vista del wizard -->
+    <record id="view_pos_order_payment_wizard_form" model="ir.ui.view">
+        <field name="name">pos.order.payment.wizard.form</field>
+        <field name="model">pos.order.payment.wizard</field>
         <field name="arch" type="xml">
-            <!-- En Odoo 18 esta vista ya no usa <tree>, sino <list> -->
-            <xpath expr="//list" position="inside">
-                <field name="name" string="Referencia"/>
-            </xpath>
+            <form string="Registrar pago POS">
+                <group>
+                    <field name="pos_order_id" readonly="1"/>
+                    <field name="date"/>
+                    <field name="payment_method_id"/>
+                    <field name="journal_id"/>
+                    <field name="amount"/>
+                    <field name="reference"/>
+                    <field name="note"/>
+                </group>
+                <footer>
+                    <button string="Confirmar" type="object" name="action_confirm" class="btn-primary"/>
+                    <button string="Cancelar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
         </field>
+    </record>
+
+    <!-- Acción técnica para el wizard -->
+    <record id="action_pos_order_payment_wizard" model="ir.actions.act_window">
+        <field name="name">Registrar pago POS</field>
+        <field name="res_model">pos.order.payment.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
     </record>
 
 </odoo>

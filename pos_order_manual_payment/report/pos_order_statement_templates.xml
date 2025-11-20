@@ -1,0 +1,84 @@
+<odoo>
+    <template id="report_pos_order_statement">
+        <t t-call="web.html_container">
+            <t t-set="partner_from_context"
+               t-value="docs and docs[0].env['res.partner'].browse(int(env.context.get('statement_partner_id'))) if env.context.get('statement_partner_id') else False"/>
+
+            <t t-call="web.internal_layout">
+                <div class="page">
+                    <!-- ENCABEZADO -->
+                    <h2>Estado de cuenta POS</h2>
+
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <p>
+                                <strong>Cliente:</strong>
+                                <t t-if="partner_from_context">
+                                    <span t-esc="partner_from_context.display_name"/>
+                                </t>
+                                <t t-else="">
+                                    <span>Todos</span>
+                                </t>
+                            </p>
+                            <p>
+                                <strong>Solo pendientes:</strong>
+                                <span t-esc="env.context.get('statement_show_only_pending') and 'Sí' or 'No'"/>
+                            </p>
+                        </div>
+                        <div class="col-6">
+                            <p>
+                                <strong>Desde:</strong>
+                                <span t-esc="env.context.get('statement_date_from') or '-'"/>
+                            </p>
+                            <p>
+                                <strong>Hasta:</strong>
+                                <span t-esc="env.context.get('statement_date_to') or '-'"/>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- TABLA PRINCIPAL -->
+                    <t t-if="docs">
+                        <table class="table table-sm table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Cliente</th>
+                                    <th>Fecha</th>
+                                    <th>Orden POS</th>
+                                    <th>Total orden</th>
+                                    <th>Total pagado POS</th>
+                                    <th>Saldo pendiente</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr t-foreach="docs" t-as="o">
+                                    <td>
+                                        <span t-esc="o.partner_id and o.partner_id.display_name or ''"/>
+                                    </td>
+                                    <td>
+                                        <span t-esc="o.date_order and o.date_order.strftime('%d/%m/%Y') or ''"/>
+                                    </td>
+                                    <td>
+                                        <span t-esc="o.name"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <span t-esc="('%.2f' % (o.amount_total or 0.0))"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <span t-esc="('%.2f' % (o.manual_paid_amount or 0.0))"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <span t-esc="('%.2f' % ((o.amount_total or 0.0) - (o.manual_paid_amount or 0.0)))"/>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </t>
+                    <t t-else="">
+                        <p><em>No se encontraron órdenes que cumplan los criterios seleccionados.</em></p>
+                    </t>
+                </div>
+            </t>
+        </t>
+    </template>
+</odoo>

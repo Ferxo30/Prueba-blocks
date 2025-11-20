@@ -1,0 +1,28 @@
+<odoo>
+
+    <!-- Agregar checkbox "Es cuenta de cliente" al formulario de métodos de pago POS -->
+    <record id="view_pos_payment_method_form_manual_payment" model="ir.ui.view">
+        <field name="name">pos.payment.method.form.manual.payment</field>
+        <field name="model">pos.payment.method</field>
+        <field name="inherit_id" ref="point_of_sale.pos_payment_method_view_form"/>
+        <field name="arch" type="xml">
+            <!-- Lo ponemos justo después del nombre del método -->
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="is_customer_account"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Opcional: también mostrarlo en la vista de lista de métodos de pago -->
+    <record id="view_pos_payment_method_tree_manual_payment" model="ir.ui.view">
+        <field name="name">pos.payment.method.tree.manual.payment</field>
+        <field name="model">pos.payment.method</field>
+        <field name="inherit_id" ref="point_of_sale.pos_payment_method_view_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="is_customer_account"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

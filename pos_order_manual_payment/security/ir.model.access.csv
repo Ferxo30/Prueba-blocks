@@ -1,2 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_pos_order_payment,pos.order.payment,model_pos_order_payment,base.group_user,1,1,1,0
 access_pos_order_payment_wizard,pos.order.payment.wizard,model_pos_order_payment_wizard,base.group_user,1,1,1,0
+access_pos_order_statement_wizard,pos.order.statement.wizard,model_pos_order_statement_wizard,base.group_user,1,0,1,0

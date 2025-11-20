@@ -1,0 +1,126 @@
+<odoo>
+    <data>
+
+        <!-- TEMPLATE QWEB DEL RECIBO (usa pagos manuales) -->
+        <template id="report_manual_payment_receipt">
+            <!-- OJO: t-name nuevo para no chocar con el que hiciste en la UI -->
+            <t t-name="pos_order_manual_payment.report_manual_payment_receipt">
+                <t t-call="web.html_container">
+                    <t t-foreach="docs" t-as="o">
+                        <t t-call="web.external_layout">
+                            <div class="page">
+
+                                <!-- CABECERA -->
+                                <h2>Recibo de pago POS (manual)</h2>
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <p>
+                                            <strong>Recibo de pago:</strong>
+                                            <span t-esc="o.name"/>
+                                        </p>
+                                        <p>
+                                            <strong>Fecha de orden:</strong>
+                                            <span t-esc="o.date_order and o.date_order.strftime('%d/%m/%Y') or ''"/>
+                                        </p>
+                                        <p>
+                                            <strong>Cliente:</strong>
+                                            <span t-esc="o.partner_id and o.partner_id.display_name or ''"/>
+                                        </p>
+                                    </div>
+                                    <div class="col-6">
+                                        <p>
+                                            <strong>Importe total orden:</strong>
+                                            <span t-esc="('%.2f' % o.amount_total)"/>
+                                        </p>
+                                        <p>
+                                            <strong>Total pagado POS:</strong>
+                                            <!-- usamos el campo nuevo manual_paid_amount -->
+                                            <span t-esc="('%.2f' % o.manual_paid_amount)"/>
+                                        </p>
+                                        <p>
+                                            <strong>Pendiente:</strong>
+                                            <span t-esc="('%.2f' % (o.amount_total - o.manual_paid_amount))"/>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- DETALLE DE PAGOS MANUALES -->
+                                <t t-if="o.manual_payment_ids">
+                                    <h3>Detalle de pagos POS manuales</h3>
+                                    <table class="table table-sm table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha de pago</th>
+                                                <th>Correlativo interno</th>
+                                                <th>Referencia</th>
+                                                <th>Método de pago</th>
+                                                <th>Diario</th>
+                                                <th class="text-right">Importe</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr t-foreach="o.manual_payment_ids" t-as="p">
+                                                <td>
+                                                    <span t-esc="p.date and p.date.strftime('%d/%m/%Y') or ''"/>
+                                                </td>
+                                                <td>
+                                                    <!-- correlativo interno de la orden -->
+                                                    <span t-esc="o.internal_correlative or o.pos_reference or o.name"/>
+                                                </td>
+                                                <td>
+                                                    <span t-esc="p.reference or ''"/>
+                                                </td>
+                                                <td>
+                                                    <span t-esc="p.payment_method_id and p.payment_method_id.display_name or ''"/>
+                                                </td>
+                                                <td>
+                                                    <span t-esc="p.journal_id and p.journal_id.display_name or ''"/>
+                                                </td>
+                                                <td class="text-right">
+                                                    <span t-esc="('%.2f' % p.amount)"/>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </t>
+                                <t t-else="">
+                                    <p><em>Esta orden aún no tiene pagos POS manuales registrados.</em></p>
+                                </t>
+
+                                <!-- OBSERVACIONES -->
+                                <div class="mt-4">
+                                    <p><strong>Observaciones:</strong></p>
+                                    <p/>
+                                </div>
+
+                                <!-- Salto de página por si hay varias órdenes -->
+                                <div class="page-break"/>
+                            </div>
+                        </t>
+                    </t>
+                </t>
+            </t>
+        </template>
+
+        <!-- ACCIÓN DEL REPORTE (para menú Imprimir en pos.order) -->
+        <record id="action_report_manual_payment_receipt" model="ir.actions.report">
+            <field name="name">Recibo de pago POS manual</field>
+            <field name="model">pos.order</field>
+            <field name="report_type">qweb-pdf</field>
+
+            <!-- Debe coincidir con el t-name de arriba -->
+            <field name="report_name">pos_order_manual_payment.report_manual_payment_receipt</field>
+            <field name="report_file">pos_order_manual_payment.report_manual_payment_receipt</field>
+
+            <!-- Para que salga en el botón IMPRIMIR de las órdenes POS -->
+            <field name="binding_model_id" ref="point_of_sale.model_pos_order"/>
+            <field name="binding_type">report</field>
+
+            <!-- Nombre del PDF -->
+            <field name="print_report_name">
+                'Recibo_de_pago_POS_%s' % (object.name or '')
+            </field>
+        </record>
+
+    </data>
+</odoo>

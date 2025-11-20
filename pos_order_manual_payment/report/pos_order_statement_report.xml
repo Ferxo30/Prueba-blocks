@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Acción de reporte: Estado de cuenta POS -->
+    <record id="action_report_pos_order_statement" model="ir.actions.report">
+        <field name="name">Estado de cuenta POS</field>
+        <field name="model">pos.order</field>
+        <field name="report_type">qweb-pdf</field>
+
+        <!-- nombre técnico del reporte / plantilla -->
+        <field name="report_name">pos_order_manual_payment.report_pos_order_statement</field>
+        <field name="report_file">pos_order_manual_payment.report_pos_order_statement</field>
+
+        <field name="print_report_name">
+            'Estado_de_cuenta_POS_%s' % (object and object[0].partner_id.name or '')
+        </field>
+    </record>
+
+    <!-- Plantilla QWeb: t-name debe coincidir con report_name -->
+    <template id="report_pos_order_statement">
+        <t t-name="pos_order_manual_payment.report_pos_order_statement">
+            <t t-call="web.html_container">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <h2>Estado de cuenta POS</h2>
+
+                        <!-- Resumen de filtros del wizard -->
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <p>
+                                    <strong>Cliente:</strong>
+                                    <t t-if="context.get('statement_partner_id')">
+                                        <span t-esc="env['res.partner'].browse(context.get('statement_partner_id')).display_name"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span>Todos</span>
+                                    </t>
+                                </p>
+                                <p>
+                                    <strong>Solo pendientes de pago:</strong>
+                                    <span t-esc="'Sí' if context.get('statement_show_only_pending') else 'No'"/>
+                                </p>
+                            </div>
+                            <div class="col-6">
+                                <p>
+                                    <span t-esc="context.get('statement_date_from') or ''"/>
+                                </p>
+                                <p>
+                                    <strong>Hasta:</strong>
+                                    <span t-esc="context.get('statement_date_to') or ''"/>
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Si hay órdenes -->
+                        <t t-if="docs">
+                            <t t-set="current_partner" t-value="False"/>
+                            <t t-set="subtotal_total" t-value="0.0"/>
+                            <t t-set="subtotal_paid" t-value="0.0"/>
+                            <t t-set="subtotal_pending" t-value="0.0"/>
+
+                            <table class="table table-sm table-bordered">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha orden</th>
+                                        <th>Cliente</th>
+                                        <th>Correlativo interno</th>
+                                        <th>Referencia</th>
+                                        <th class="text-right">Importe total</th>
+                                        <th class="text-right">Total pagado POS</th>
+                                        <th class="text-right">Saldo pendiente</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="docs" t-as="o">
+
+                                        <t t-if="current_partner and o.partner_id != current_partner">
+                                            <tr class="o_pos_statement_subtotal">
+                                                <td colspan="4">
+                                                    <strong>Total cliente
+                                                        <span t-esc="current_partner.display_name or 'Sin cliente'"/>
+                                                    </strong>
+                                                </td>
+                                                <td class="text-right">
+                                                    <span t-esc="('%.2f' % subtotal_total)"/>
+                                                </td>
+                                                <td class="text-right">
+                                                    <span t-esc="('%.2f' % subtotal_paid)"/>
+                                                </td>
+                                                <td class="text-right">
+                                                    <span t-esc="('%.2f' % subtotal_pending)"/>
+                                                </td>
+                                            </tr>
+
+                                            <t t-set="subtotal_total" t-value="0.0"/>
+                                            <t t-set="subtotal_paid" t-value="0.0"/>
+                                            <t t-set="subtotal_pending" t-value="0.0"/>
+                                        </t>
+
+                                        <t t-if="not current_partner or o.partner_id != current_partner">
+                                            <tr class="o_pos_statement_partner">
+                                                <td colspan="7">
+                                                    <strong>Cliente: </strong>
+                                                    <span t-esc="o.partner_id.display_name or 'Sin cliente'"/>
+                                                </td>
+                                            </tr>
+                                            <t t-set="current_partner" t-value="o.partner_id"/>
+                                        </t>
+
+                                        <t t-set="pending" t-value="(o.amount_total or 0.0) - (o.manual_paid_amount or 0.0)"/>
+
+                                        <tr>
+                                            <td>
+                                                <span t-esc="o.date_order and o.date_order.strftime('%d/%m/%Y') or ''"/>
+                                            </td>
+                                            <td>
+                                                <span t-esc="o.partner_id and o.partner_id.display_name or ''"/>
+                                            </td>
+                                            <td>
+                                                <span t-esc="o.name"/>
+                                            </td>
+                                            <td>
+                                                <span t-esc="o.pos_reference or ''"/>
+                                            </td>
+                                            <td class="text-right">
+                                                <span t-esc="('%.2f' % (o.amount_total or 0.0))"/>
+                                            </td>
+                                            <td class="text-right">
+                                                <span t-esc="('%.2f' % (o.manual_paid_amount or 0.0))"/>
+                                            </td>
+                                            <td class="text-right">
+                                                <span t-esc="('%.2f' % pending)"/>
+                                            </td>
+                                        </tr>
+
+                                        <t t-set="subtotal_total" t-value="subtotal_total + (o.amount_total or 0.0)"/>
+                                        <t t-set="subtotal_paid" t-value="subtotal_paid + (o.manual_paid_amount or 0.0)"/>
+                                        <t t-set="subtotal_pending" t-value="subtotal_pending + pending"/>
+
+                                    </t>
+
+                                    <t t-if="current_partner">
+                                        <tr class="o_pos_statement_subtotal">
+                                            <td colspan="4">
+                                                <strong>Total cliente
+                                                    <span t-esc="current_partner.display_name or 'Sin cliente'"/>
+                                                </strong>
+                                            </td>
+                                            <td class="text-right">
+                                                <span t-esc="('%.2f' % subtotal_total)"/>
+                                            </td>
+                                            <td class="text-right">
+                                                <span t-esc="('%.2f' % subtotal_paid)"/>
+                                            </td>
+                                            <td class="text-right">
+                                                <span t-esc="('%.2f' % subtotal_pending)"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </t>
+
+                        <t t-else="">
+                            <p><em>No se encontraron órdenes que coincidan con el filtro.</em></p>
+                        </t>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

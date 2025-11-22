@@ -1,10 +1,18 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models
+from odoo import api, fields, models, _
 
 
 class PosOrderPayment(models.Model):
     _name = "pos.order.payment"
     _description = "Pago manual de POS"
+
+    # Correlativo interno (secuencia)
+    name = fields.Char(
+        string="Correlativo interno",
+        readonly=True,
+        copy=False,
+        default=lambda self: _("New"),
+    )
 
     pos_order_id = fields.Many2one(
         "pos.order",
@@ -52,3 +60,21 @@ class PosOrderPayment(models.Model):
         string="Nota",
     )
 
+    @api.model
+    def create(self, vals):
+        """Asignar secuencia al correlativo interno."""
+        if not vals.get("name") or vals.get("name") == _("New"):
+            # 1) Intentar usar la secuencia del módulo por xml_id
+            seq = self.env.ref(
+                "pos_order_manual_payment.seq_pos_order_manual_payment",
+                raise_if_not_found=False,
+            )
+            if seq:
+                vals["name"] = seq.next_by_id()
+            else:
+                # 2) Respaldo: usar el code por si acaso
+                vals["name"] = (
+                    self.env["ir.sequence"].next_by_code("pos.order.payment")
+                    or _("New")
+                )
+        return super().create(vals)

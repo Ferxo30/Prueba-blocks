@@ -8,6 +8,7 @@
     "depends": ["point_of_sale"],
     "data": [
         "security/ir.model.access.csv",
+        "data/pos_order_payment_sequence.xml", 
         "wizard/pos_order_payment_wizard_views.xml",
         "views/pos_order_views.xml",
         'views/pos_payment_method_views.xml', 

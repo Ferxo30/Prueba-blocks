@@ -64,8 +64,8 @@
                                                     <span t-esc="p.date and p.date.strftime('%d/%m/%Y') or ''"/>
                                                 </td>
                                                 <td>
-                                                    <!-- correlativo interno de la orden -->
-                                                    <span t-esc="o.internal_correlative or o.pos_reference or o.name"/>
+                                                    <!-- correlativo interno DEL PAGO -->
+                                                    <span t-esc="p.name or ''"/>
                                                 </td>
                                                 <td>
                                                     <span t-esc="p.reference or ''"/>

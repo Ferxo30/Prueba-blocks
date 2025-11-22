@@ -2,14 +2,14 @@
 import io
 import base64
 import xlsxwriter
+
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
 
-
-class PosOrderStatementWizard(models.TransientModel):
-    _name = "pos.order.statement.wizard"
-    _description = "Estado de cuenta POS"
+class PosOrderInvoiceStatementWizard(models.TransientModel):
+    _name = "pos.order.invoice.statement.wizard"
+    _description = "Estado de cuenta de facturación POS"
 
     # -------------------------------------------------------------------------
     # Campos del wizard
@@ -23,135 +23,127 @@ class PosOrderStatementWizard(models.TransientModel):
     date_to = fields.Date(string="Hasta")
 
     show_only_pending = fields.Boolean(
-        string="Solo pendientes de pago",
+        string="Solo facturas con saldo pendiente",
         default=True,
-        help="Si está activo, solo se mostrarán órdenes con saldo pendiente.",
     )
 
     # -------------------------------------------------------------------------
-    # Dominio base: POS sin factura (crédito por cuenta de cliente)
+    # Helpers
     # -------------------------------------------------------------------------
-    @api.model
-    def _get_base_domain(self):
-        """
-        Dominio base: órdenes POS a crédito (Cuenta de cliente) sin factura.
-
-        Reglas:
-        - state en paid/done   -> ya cerradas en POS
-        - account_move = False -> no tienen factura
-        - payment_ids.payment_method_id.is_customer_account = True
-          (método de pago marcado como 'Cuenta de cliente')
-        """
-        domain = [
-            ("state", "in", ["paid", "done"]),
-            ("account_move", "=", False),
-            ("payment_ids.payment_method_id.is_customer_account", "=", True),
-        ]
-        return domain
-
-    # -------------------------------------------------------------------------
-    # Búsqueda de órdenes que entran al estado de cuenta
-    # -------------------------------------------------------------------------
-    def _get_orders(self):
+    def _get_orders_domain(self):
+        """Dominio base: órdenes POS que tengan factura."""
         self.ensure_one()
-        domain = self._get_base_domain()
+        domain = [
+            ("account_move", "!=", False),
+        ]
 
         if self.partner_id:
             domain.append(("partner_id", "=", self.partner_id.id))
+
         if self.date_from:
-            domain.append(("date_order", ">=", self.date_from))
+            # Filtramos por fecha de la factura
+            domain.append(("account_move.invoice_date", ">=", self.date_from))
+
         if self.date_to:
-            domain.append(("date_order", "<=", self.date_to))
+            domain.append(("account_move.invoice_date", "<=", self.date_to))
 
-        orders = self.env["pos.order"].search(
-            domain,
-            order="partner_id, date_order, name",
-        )
-
-        # Filtro opcional: solo órdenes con saldo pendiente
-        if self.show_only_pending:
-            orders = orders.filtered(
-                lambda o: (o.amount_total or 0.0) - (o.manual_paid_amount or 0.0) > 0.00001
-            )
-
-        return orders
+        return domain
 
     # -------------------------------------------------------------------------
-    # Acción del botón "Imprimir estado de cuenta"
+    # Acción principal (PDF)
     # -------------------------------------------------------------------------
-    # -------------------------------------------------------------------------
-    # Acción del botón "Imprimir estado de cuenta"
-    # -------------------------------------------------------------------------
-    def action_print_report(self):
+    def action_print(self):
         self.ensure_one()
 
-        # 1) Órdenes según filtros del wizard
-        orders = self._get_orders().exists()  # .exists() elimina IDs “muertos”
-
-        if not orders:
-            raise UserError(
-                _("No se encontraron órdenes POS que cumplan los filtros seleccionados.")
-            )
-
-        # 2) Buscamos el reporte por nombre técnico
-        report = self.env["ir.actions.report"]._get_report_from_name(
-            "pos_order_manual_payment.report_pos_order_statement"
+        report = self.env.ref(
+            "pos_order_manual_payment.action_report_pos_order_invoice_statement",
+            raise_if_not_found=False,
         )
         if not report:
-            raise UserError(
-                _(
-                    "No se encontró el reporte técnico "
-                    "'pos_order_manual_payment.report_pos_order_statement'.\n\n"
-                    "Verifica que el archivo XML "
-                    "'report/pos_order_statement_report.xml' esté cargado "
-                    "y vuelve a actualizar el módulo."
-                )
+            raise UserError(_(
+                "No se encontró la acción de reporte "
+                "'action_report_pos_order_invoice_statement'. "
+                "Verifica el XML del reporte."
+            ))
+
+        domain = self._get_orders_domain()
+        orders = self.env["pos.order"].search(domain)
+
+        # Filtramos por saldo pendiente si corresponde
+        if self.show_only_pending:
+            orders = orders.filtered(
+                lambda o: o.account_move
+                and o.account_move.amount_residual > 0
             )
 
-        # 3) Limpiamos active_ids/active_id/active_model del CONTEXTO que vamos a usar
-        ctx = dict(self.env.context or {})
-        ctx.pop("active_ids", None)
-        ctx.pop("active_id", None)
-        ctx.pop("active_model", None)
+        if not orders:
+            raise UserError(_(
+                "No se encontraron órdenes de POS con factura "
+                "que coincidan con los filtros."
+            ))
 
-        # Mandamos también los filtros del wizard por si los quieres usar en QWeb
+        # Ordenamos para agrupar bonito en QWeb
+        orders = orders.sorted(
+            key=lambda o: (
+                o.partner_id.display_name or "",
+                o.account_move.invoice_date or o.date_order or fields.Date.today(),
+                o.name,
+            )
+        )
+
+        # Contexto para el QWeb
+        ctx = dict(self.env.context or {})
         ctx.update(
             {
                 "statement_partner_id": self.partner_id.id if self.partner_id else False,
                 "statement_date_from": self.date_from and self.date_from.isoformat() or False,
                 "statement_date_to": self.date_to and self.date_to.isoformat() or False,
                 "statement_show_only_pending": self.show_only_pending,
+                "statement_mode": "invoice",
             }
         )
 
-        # 4) Llamamos al reporte usando el contexto LIMPIO
-        action = report.with_context(ctx).report_action(orders.ids)
-        return action
+        return report.with_context(ctx).report_action(orders.ids)
+
     # -------------------------------------------------------------------------
     # Exportar a Excel
     # -------------------------------------------------------------------------
     def action_export_xlsx(self):
         self.ensure_one()
 
-        orders = self._get_orders().exists()
-        if not orders:
-            raise UserError(
-                _("No se encontraron órdenes POS que cumplan los filtros seleccionados.")
+        domain = self._get_orders_domain()
+        orders = self.env["pos.order"].search(domain)
+
+        if self.show_only_pending:
+            orders = orders.filtered(
+                lambda o: o.account_move and o.account_move.amount_residual > 0
             )
 
-        # Crear libro en memoria
+        if not orders:
+            raise UserError(_(
+                "No se encontraron órdenes de POS con factura "
+                "que coincidan con los filtros."
+            ))
+
+        # Ordenar igual que para el PDF
+        orders = orders.sorted(
+            key=lambda o: (
+                o.partner_id.display_name or "",
+                o.account_move.invoice_date or o.date_order or fields.Date.today(),
+                o.name,
+            )
+        )
+
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {"in_memory": True})
-        sheet = workbook.add_worksheet("Estado de cuenta POS")
+        sheet = workbook.add_worksheet("Facturación POS")
 
-        # Formatos
         bold = workbook.add_format({"bold": True})
         money = workbook.add_format({"num_format": "#,##0.00"})
-        date_fmt = workbook.add_format({"num_format": "dd/mm/yyyy"})
 
         row = 0
 
-        # Encabezado con filtros
+        # Filtros
         sheet.write(row, 0, "Cliente", bold)
         if self.partner_id:
             sheet.write(row, 1, self.partner_id.display_name or "")
@@ -159,7 +151,7 @@ class PosOrderStatementWizard(models.TransientModel):
             sheet.write(row, 1, "Todos")
         row += 1
 
-        sheet.write(row, 0, "Solo pendientes", bold)
+        sheet.write(row, 0, "Solo con saldo pendiente", bold)
         sheet.write(row, 1, "Sí" if self.show_only_pending else "No")
         row += 1
 
@@ -171,31 +163,35 @@ class PosOrderStatementWizard(models.TransientModel):
         sheet.write(row, 1, self.date_to and self.date_to.strftime("%d/%m/%Y") or "")
         row += 2
 
-        # Encabezado de tabla
+        # Encabezados
         headers = [
-            "Fecha orden",
+            "Fecha factura",
             "Cliente",
-            "Correlativo interno",
-            "Referencia",
-            "Importe total",
-            "Total pagado POS",
+            "Orden POS",
+            "Factura",
+            "Total factura",
+            "Total pagado",
             "Saldo pendiente",
         ]
         for col, header in enumerate(headers):
             sheet.write(row, col, header, bold)
         row += 1
 
-        # Mismos agrupamientos que en el PDF
         current_partner = False
-        subtotal_total = 0.0
-        subtotal_paid = 0.0
-        subtotal_pending = 0.0
+        subtotal_total = subtotal_paid = subtotal_pending = 0.0
 
         for o in orders:
-            partner = o.partner_id
-            pending = (o.amount_total or 0.0) - (o.manual_paid_amount or 0.0)
+            inv = o.account_move
+            if not inv:
+                continue
 
-            # Cambio de cliente: imprimir subtotal anterior
+            total = inv.amount_total or 0.0
+            pending = inv.amount_residual or 0.0
+            paid = total - pending
+
+            partner = inv.partner_id
+
+            # Cambio de cliente: subtotal
             if current_partner and partner != current_partner:
                 sheet.write(row, 0, "Total cliente %s" % (current_partner.display_name or "Sin cliente"), bold)
                 sheet.write(row, 4, subtotal_total, money)
@@ -204,27 +200,23 @@ class PosOrderStatementWizard(models.TransientModel):
                 row += 2
                 subtotal_total = subtotal_paid = subtotal_pending = 0.0
 
-            # Encabezado por cliente
+            # Encabezado cliente
             if not current_partner or partner != current_partner:
                 sheet.write(row, 0, "Cliente: %s" % (partner.display_name or "Sin cliente"), bold)
                 current_partner = partner
                 row += 1
 
             # Fila detalle
-            if o.date_order:
-                sheet.write_datetime(row, 0, o.date_order, date_fmt)
-            else:
-                sheet.write(row, 0, "")
-
+            sheet.write(row, 0, inv.invoice_date and inv.invoice_date.strftime("%d/%m/%Y") or "")
             sheet.write(row, 1, partner.display_name or "")
             sheet.write(row, 2, o.name or "")
-            sheet.write(row, 3, o.pos_reference or "")
-            sheet.write(row, 4, o.amount_total or 0.0, money)
-            sheet.write(row, 5, o.manual_paid_amount or 0.0, money)
+            sheet.write(row, 3, inv.name or "")
+            sheet.write(row, 4, total, money)
+            sheet.write(row, 5, paid, money)
             sheet.write(row, 6, pending, money)
 
-            subtotal_total += o.amount_total or 0.0
-            subtotal_paid += o.manual_paid_amount or 0.0
+            subtotal_total += total
+            subtotal_paid += paid
             subtotal_pending += pending
             row += 1
 
@@ -239,7 +231,7 @@ class PosOrderStatementWizard(models.TransientModel):
         output.seek(0)
         data = base64.b64encode(output.read())
 
-        filename = "estado_cuenta_pos.xlsx"
+        filename = "estado_cuenta_facturacion_pos.xlsx"
         attachment = self.env["ir.attachment"].create({
             "name": filename,
             "type": "binary",

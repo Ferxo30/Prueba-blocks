@@ -25,6 +25,12 @@
                             type="object"
                             name="action_print_report"
                             class="btn-primary"/>
+                        <!-- 🔽 NUEVO: botón Excel -->
+                    <button string="Exportar a Excel"
+                            type="object"
+                            name="action_export_xlsx"
+                            class="btn-secondary"/>
+                            
                     <button string="Cancelar"
                             special="cancel"
                             class="btn-secondary"/>

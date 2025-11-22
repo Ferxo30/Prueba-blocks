@@ -18,10 +18,29 @@ class PosOrderPaymentWizard(models.TransientModel):
         required=True,
     )
 
+    available_payment_method_ids = fields.Many2many(
+        "pos.payment.method",
+        string="Métodos de pago disponibles",
+        compute="_compute_available_payment_method_ids",
+    )
+
+    @api.depends("pos_order_id")
+    def _compute_available_payment_method_ids(self):
+        for wizard in self:
+            methods = self.env["pos.payment.method"]
+            order = wizard.pos_order_id
+            if order:
+                # Intentar obtener la config desde la sesión o desde config_id (según versión)
+                config = order.session_id.config_id or getattr(order, "config_id", False)
+                if config:
+                    methods = config.payment_method_ids
+            wizard.available_payment_method_ids = methods
+
     payment_method_id = fields.Many2one(
         "pos.payment.method",
         string="Método de pago",
         required=True,
+        domain="[('id', 'in', available_payment_method_ids)]",
     )
 
     journal_id = fields.Many2one(

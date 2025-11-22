@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Vista FORM del wizard de facturación -->
+    <record id="view_pos_order_invoice_statement_wizard" model="ir.ui.view">
+        <field name="name">pos.order.invoice.statement.wizard.form</field>
+        <field name="model">pos.order.invoice.statement.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Estado de cuenta de facturación POS">
+                <group>
+                    <group>
+                        <field name="partner_id"/>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                    </group>
+                    <group>
+                        <field name="show_only_pending"/>
+                    </group>
+                </group>
+                <footer>
+                    <button name="action_print"
+                            string="Imprimir"
+                            type="object"
+                            class="btn-primary"/>
+                                <!-- 🔽 NUEVO: botón Excel -->
+                    <button name="action_export_xlsx"
+                            string="Exportar a Excel"
+                            type="object"
+                            class="btn-secondary"/>
+                    <button string="Cancelar"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción del wizard -->
+    <record id="action_pos_order_invoice_statement_wizard" model="ir.actions.act_window">
+        <field name="name">Estado de cuenta facturación POS</field>
+        <field name="res_model">pos.order.invoice.statement.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_pos_order_invoice_statement_wizard"/>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Menú en Punto de venta -->
+    <menuitem id="menu_pos_order_invoice_statement"
+              name="Estado de cuenta facturación POS"
+              parent="point_of_sale.menu_point_root"
+              action="action_pos_order_invoice_statement_wizard"
+              sequence="61"/>
+</odoo>

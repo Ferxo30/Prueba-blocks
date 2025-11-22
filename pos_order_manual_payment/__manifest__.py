@@ -15,6 +15,8 @@
         'wizard/pos_order_statement_wizard_views.xml',
         'report/pos_order_statement_report.xml',
         #'report/pos_order_statement_templates.xml'
+        'wizard/pos_order_invoice_statement_wizard_views.xml',
+        'report/pos_order_invoice_statement_report.xml',
     ],
     "installable": True,
     "application": False,

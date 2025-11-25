@@ -168,7 +168,7 @@ class PosOrderInvoiceStatementWizard(models.TransientModel):
             "Fecha factura",
             "Cliente",
             "Orden POS",
-            "Factura",
+            "DTE",
             "Total factura",
             "Total pagado",
             "Saldo pendiente",
@@ -193,24 +193,34 @@ class PosOrderInvoiceStatementWizard(models.TransientModel):
 
             # Cambio de cliente: subtotal
             if current_partner and partner != current_partner:
-                sheet.write(row, 0, "Total cliente %s" % (current_partner.display_name or "Sin cliente"), bold)
+                display_name = current_partner.display_name or "Sin cliente"
+                internal_code = current_partner.internal_code or False
+                if internal_code:
+                    label = "Total cliente (%s) %s" % (internal_code, display_name)
+                else:
+                    label = "Total cliente %s" % display_name
+
+                sheet.write(row, 0, label, bold)
                 sheet.write(row, 4, subtotal_total, money)
                 sheet.write(row, 5, subtotal_paid, money)
                 sheet.write(row, 6, subtotal_pending, money)
                 row += 2
                 subtotal_total = subtotal_paid = subtotal_pending = 0.0
 
-            # Encabezado cliente
+            # Solo actualizamos current_partner (ya no escribimos "Cliente: ...")
             if not current_partner or partner != current_partner:
-                sheet.write(row, 0, "Cliente: %s" % (partner.display_name or "Sin cliente"), bold)
                 current_partner = partner
-                row += 1
 
             # Fila detalle
-            sheet.write(row, 0, inv.invoice_date and inv.invoice_date.strftime("%d/%m/%Y") or "")
+            sheet.write(
+                row,
+                0,
+                inv.invoice_date and inv.invoice_date.strftime("%d/%m/%Y") or "",
+            )
             sheet.write(row, 1, partner.display_name or "")
             sheet.write(row, 2, o.name or "")
-            sheet.write(row, 3, inv.name or "")
+            # DTE: numero_fel de la factura
+            sheet.write(row, 3, getattr(inv, "numero_fel", "") or "")
             sheet.write(row, 4, total, money)
             sheet.write(row, 5, paid, money)
             sheet.write(row, 6, pending, money)
@@ -222,7 +232,14 @@ class PosOrderInvoiceStatementWizard(models.TransientModel):
 
         # Subtotal último cliente
         if current_partner:
-            sheet.write(row, 0, "Total cliente %s" % (current_partner.display_name or "Sin cliente"), bold)
+            display_name = current_partner.display_name or "Sin cliente"
+            internal_code = current_partner.internal_code or False
+            if internal_code:
+                label = "Total cliente (%s) %s" % (internal_code, display_name)
+            else:
+                label = "Total cliente %s" % display_name
+
+            sheet.write(row, 0, label, bold)
             sheet.write(row, 4, subtotal_total, money)
             sheet.write(row, 5, subtotal_paid, money)
             sheet.write(row, 6, subtotal_pending, money)

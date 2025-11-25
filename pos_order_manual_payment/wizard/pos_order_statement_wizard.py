@@ -2,9 +2,9 @@
 import io
 import base64
 import xlsxwriter
+
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
-
 
 
 class PosOrderStatementWizard(models.TransientModel):
@@ -79,9 +79,6 @@ class PosOrderStatementWizard(models.TransientModel):
     # -------------------------------------------------------------------------
     # Acción del botón "Imprimir estado de cuenta"
     # -------------------------------------------------------------------------
-    # -------------------------------------------------------------------------
-    # Acción del botón "Imprimir estado de cuenta"
-    # -------------------------------------------------------------------------
     def action_print_report(self):
         self.ensure_one()
 
@@ -127,6 +124,7 @@ class PosOrderStatementWizard(models.TransientModel):
         # 4) Llamamos al reporte usando el contexto LIMPIO
         action = report.with_context(ctx).report_action(orders.ids)
         return action
+
     # -------------------------------------------------------------------------
     # Exportar a Excel
     # -------------------------------------------------------------------------
@@ -197,18 +195,23 @@ class PosOrderStatementWizard(models.TransientModel):
 
             # Cambio de cliente: imprimir subtotal anterior
             if current_partner and partner != current_partner:
-                sheet.write(row, 0, "Total cliente %s" % (current_partner.display_name or "Sin cliente"), bold)
+                display_name = current_partner.display_name or "Sin cliente"
+                internal_code = current_partner.internal_code or False
+                if internal_code:
+                    label = "Total cliente (%s) %s" % (internal_code, display_name)
+                else:
+                    label = "Total cliente %s" % display_name
+
+                sheet.write(row, 0, label, bold)
                 sheet.write(row, 4, subtotal_total, money)
                 sheet.write(row, 5, subtotal_paid, money)
                 sheet.write(row, 6, subtotal_pending, money)
                 row += 2
                 subtotal_total = subtotal_paid = subtotal_pending = 0.0
 
-            # Encabezado por cliente
+            # Solo actualizamos current_partner (ya no escribimos "Cliente: ...")
             if not current_partner or partner != current_partner:
-                sheet.write(row, 0, "Cliente: %s" % (partner.display_name or "Sin cliente"), bold)
                 current_partner = partner
-                row += 1
 
             # Fila detalle
             if o.date_order:
@@ -230,7 +233,14 @@ class PosOrderStatementWizard(models.TransientModel):
 
         # Subtotal último cliente
         if current_partner:
-            sheet.write(row, 0, "Total cliente %s" % (current_partner.display_name or "Sin cliente"), bold)
+            display_name = current_partner.display_name or "Sin cliente"
+            internal_code = current_partner.internal_code or False
+            if internal_code:
+                label = "Total cliente (%s) %s" % (internal_code, display_name)
+            else:
+                label = "Total cliente %s" % display_name
+
+            sheet.write(row, 0, label, bold)
             sheet.write(row, 4, subtotal_total, money)
             sheet.write(row, 5, subtotal_paid, money)
             sheet.write(row, 6, subtotal_pending, money)

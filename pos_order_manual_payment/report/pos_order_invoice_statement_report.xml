@@ -67,7 +67,8 @@
                                         <th>Fecha factura</th>
                                         <th>Cliente</th>
                                         <th>Orden POS</th>
-                                        <th>Factura</th>
+                                        <!-- 🔹 AHORA SOLO DTE (numero_fel) -->
+                                        <th>DTE</th>
                                         <th class="text-right">Total factura</th>
                                         <th class="text-right">Total pagado</th>
                                         <th class="text-right">Saldo pendiente</th>
@@ -91,7 +92,13 @@
                                             <t t-if="current_partner and inv.partner_id != current_partner">
                                                 <tr class="o_pos_statement_subtotal">
                                                     <td colspan="4">
-                                                        <strong>Total cliente
+                                                        <strong>
+                                                            Total cliente
+                                                            <!-- 🔹 Código interno DEL CLIENTE, si existe -->
+                                                            <t t-if="current_partner.internal_code">
+                                                                (<span t-esc="current_partner.internal_code"/>)
+                                                            </t>
+                                                            <span> </span>
                                                             <span t-esc="current_partner.display_name or 'Sin cliente'"/>
                                                         </strong>
                                                     </td>
@@ -112,7 +119,7 @@
                                                 <t t-set="subtotal_pending" t-value="0.0"/>
                                             </t>
 
-                                            <!-- Encabezado de bloque cuando inicia un cliente nuevo -->
+                                            <!-- ❌ YA NO MOSTRAMOS LA FILA "Cliente: xxxx" POR ENCIMA
                                             <t t-if="not current_partner or inv.partner_id != current_partner">
                                                 <tr class="o_pos_statement_partner">
                                                     <td colspan="7">
@@ -120,6 +127,10 @@
                                                         <span t-esc="inv.partner_id.display_name or 'Sin cliente'"/>
                                                     </td>
                                                 </tr>
+                                                <t t-set="current_partner" t-value="inv.partner_id"/>
+                                            </t>
+                                            -->
+                                            <t t-if="not current_partner or inv.partner_id != current_partner">
                                                 <t t-set="current_partner" t-value="inv.partner_id"/>
                                             </t>
 
@@ -135,7 +146,8 @@
                                                     <span t-esc="o.name"/>
                                                 </td>
                                                 <td>
-                                                    <span t-esc="inv.name or ''"/>
+                                                    <!-- 🔹 Usamos numero_fel de la factura -->
+                                                    <span t-esc="inv.numero_fel or ''"/>
                                                 </td>
                                                 <td class="text-right">
                                                     <span t-esc="('%.2f' % total)"/>
@@ -160,7 +172,13 @@
                                     <t t-if="current_partner">
                                         <tr class="o_pos_statement_subtotal">
                                             <td colspan="4">
-                                                <strong>Total cliente
+                                                <strong>
+                                                    Total cliente
+                                                    <!-- 🔹 Código interno DEL CLIENTE, si existe -->
+                                                    <t t-if="current_partner.internal_code">
+                                                        (<span t-esc="current_partner.internal_code"/>)
+                                                    </t>
+                                                    <span> </span>
                                                     <span t-esc="current_partner.display_name or 'Sin cliente'"/>
                                                 </strong>
                                             </td>

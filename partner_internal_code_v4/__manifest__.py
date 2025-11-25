@@ -7,17 +7,17 @@
     'author': 'Blockera Bustamante / ChatGPT',
     'license': 'LGPL-3',
     'website': 'https://example.com',
-    'depends': ['base', 'contacts', 'point_of_sale'],  # quita 'point_of_sale' si no lo usas
+    'depends': ['base', 'contacts', 'point_of_sale'],
     'data': [
         'security/ir.model.access.csv',
         'data/ir_sequence_data.xml',
-        'views/internal_code_wizard_views.xml',  # <-- primero
-        'views/res_partner_views.xml',           # <-- después
+        'views/internal_code_wizard_views.xml',
+        'views/res_partner_views.xml',
     ],
     'assets': {
-        'point_of_sale.assets': [
+        'point_of_sale._assets_pos': [
             'partner_internal_code_v4/static/src/js/pos_partner_internal_code.js',
-            # No cargues ningún XML del POS por ahora
+            'partner_internal_code_v4/static/src/xml/pos_partner_internal_code.xml',
         ],
     },
     'installable': True,

@@ -119,7 +119,7 @@ class AccountInvoice(models.Model):
                 raise UserError("La factura ya fue validada, por lo que no puede ser validada nuevamente")
 
             dte = factura.dte_documento()
-            if not dte:
+            if dte is None:
                 continue
 
             xml_sin_firma = etree.tostring(dte, encoding="UTF-8").decode("utf-8")
@@ -241,11 +241,13 @@ class AccountInvoice(models.Model):
                 # no duplicar: no reenvíes; devuelve error limpio
                 #raise UserError("No se recibió xml_dte del certificador para id=%s; no se reenvió para evitar duplicados." % uuid_req)
                 # Intentar extraer info de error del primer registrar
+            # Mensaje genérico por si no logramos leer nada
                 msg = (
                     "No se recibió xml_dte del certificador para id=%s; "
                     "no se reenvió para evitar duplicados."
                 ) % uuid_req
 
+                # Intentar extraer tipo_respuesta y listado_errores
                 try:
                     tipo_resp = (resultadoXML.findtext(".//tipo_respuesta") or "").strip()
                 except Exception:
@@ -265,10 +267,10 @@ class AccountInvoice(models.Model):
                             tipo_resp, uuid_req, "\n".join(errores)
                         )
                     else:
-                        # Como plan B, todo el XML por si el mensaje viene en otro nodo
-                        from lxml import etree
+                        # Aquí usamos etree, pero SIN volver a importarlo
                         msg = "Error FEL sin xml_dte (tipo_respuesta=%s) para id=%s.\nXML:\n%s" % (
-                            tipo_resp, uuid_req,
+                            tipo_resp,
+                            uuid_req,
                             etree.tostring(resultadoXML, encoding="unicode")
                         )
 

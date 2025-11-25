@@ -239,40 +239,7 @@ class AccountInvoice(models.Model):
                     raise UserError("No se pudo aplicar NumeroAutorizacion del xml_dte (id=%s)." % uuid_req)
             else:
                 # no duplicar: no reenvíes; devuelve error limpio
-                #raise UserError("No se recibió xml_dte del certificador para id=%s; no se reenvió para evitar duplicados." % uuid_req)
-                # Intentar extraer info de error del primer registrar
-                msg = (
-                    "No se recibió xml_dte del certificador para id=%s; "
-                    "no se reenvió para evitar duplicados."
-                ) % uuid_req
-
-                try:
-                    tipo_resp = (resultadoXML.findtext(".//tipo_respuesta") or "").strip()
-                except Exception:
-                    tipo_resp = ""
-
-                errores = []
-                try:
-                    for e in resultadoXML.xpath("//listado_errores//descripcion_errores | //descripcion_errores"):
-                        if e is not None and (e.text or "").strip():
-                            errores.append(e.text.strip())
-                except Exception:
-                    pass
-
-                if tipo_resp and tipo_resp != "0":
-                    if errores:
-                        msg = "Error FEL (tipo_respuesta=%s) para id=%s:\n%s" % (
-                            tipo_resp, uuid_req, "\n".join(errores)
-                        )
-                    else:
-                        # Como plan B, todo el XML por si el mensaje viene en otro nodo
-                        from lxml import etree
-                        msg = "Error FEL sin xml_dte (tipo_respuesta=%s) para id=%s.\nXML:\n%s" % (
-                            tipo_resp, uuid_req,
-                            etree.tostring(resultadoXML, encoding="unicode")
-                        )
-
-                raise UserError(msg)
+                raise UserError("No se recibió xml_dte del certificador para id=%s; no se reenvió para evitar duplicados." % uuid_req)
 
         return True
 

@@ -10,6 +10,7 @@
                 <group>
                     <group>
                         <field name="partner_id"/>
+                        <field name="pos_config_id"/>
                         <field name="date_from"/>
                         <field name="date_to"/>
                     </group>
@@ -18,19 +19,17 @@
                     </group>
                 </group>
 
-                <!-- AQUÍ VAN LOS BOTONES DEL WIZARD -->
+                <!-- BOTONES DEL WIZARD -->
                 <footer>
-                    <!-- Llama al método action_print_report del wizard -->
                     <button string="Imprimir estado de cuenta"
                             type="object"
                             name="action_print_report"
                             class="btn-primary"/>
-                        <!-- 🔽 NUEVO: botón Excel -->
                     <button string="Exportar a Excel"
                             type="object"
                             name="action_export_xlsx"
                             class="btn-secondary"/>
-                            
+
                     <button string="Cancelar"
                             special="cancel"
                             class="btn-secondary"/>
@@ -45,7 +44,6 @@
         <field name="res_model">pos.order.statement.wizard</field>
         <field name="view_mode">form</field>
         <field name="view_id" ref="view_pos_order_statement_wizard"/>
-        <!-- ESTA LÍNEA es la que hace que sea wizard -->
         <field name="target">new</field>
     </record>
 
@@ -56,3 +54,4 @@
               action="action_pos_order_statement_wizard"
               sequence="60"/>
 </odoo>
+

@@ -136,7 +136,7 @@
                                                 <span t-esc="o.partner_id and o.partner_id.display_name or ''"/>
                                             </td>
                                             <td>
-                                                <span t-esc="o.name"/>
+                                                <span t-esc="o.internal_correlative or o.name or ''"/>
                                             </td>
                                             <td>
                                                 <span t-esc="o.pos_reference or ''"/>

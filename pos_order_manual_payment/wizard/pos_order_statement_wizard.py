@@ -22,6 +22,12 @@ class PosOrderStatementWizard(models.TransientModel):
     date_from = fields.Date(string="Desde")
     date_to = fields.Date(string="Hasta")
 
+    pos_config_id = fields.Many2one(
+        "pos.config",
+        string="Establecimiento",
+        help="Si se indica, solo se mostrarán órdenes de este punto de venta.",
+    )
+
     show_only_pending = fields.Boolean(
         string="Solo pendientes de pago",
         default=True,
@@ -38,12 +44,13 @@ class PosOrderStatementWizard(models.TransientModel):
 
         Reglas:
         - state en paid/done   -> ya cerradas en POS
+        - state != cancel      -> NO incluir anuladas
         - account_move = False -> no tienen factura
         - payment_ids.payment_method_id.is_customer_account = True
-          (método de pago marcado como 'Cuenta de cliente')
         """
         domain = [
             ("state", "in", ["paid", "done"]),
+            ("state", "!=", "cancel"),
             ("account_move", "=", False),
             ("payment_ids.payment_method_id.is_customer_account", "=", True),
         ]
@@ -62,10 +69,18 @@ class PosOrderStatementWizard(models.TransientModel):
             domain.append(("date_order", ">=", self.date_from))
         if self.date_to:
             domain.append(("date_order", "<=", self.date_to))
+        if self.pos_config_id:
+            # Filtrar por establecimiento (configuración de PdV)
+            domain.append(("session_id.config_id", "=", self.pos_config_id.id))
 
-        orders = self.env["pos.order"].search(
-            domain,
-            order="partner_id, date_order, name",
+        orders = self.env["pos.order"].search(domain)
+
+        # Excluir:
+        # - órdenes que son reembolso (tienen refund_order_id)
+        # - órdenes originales que tienen reembolsos ligados (refunds_ids)
+        orders = orders.filtered(
+            lambda o: not getattr(o, "refund_order_id", False)
+            and not getattr(o, "refunds_ids", False)
         )
 
         # Filtro opcional: solo órdenes con saldo pendiente
@@ -73,6 +88,20 @@ class PosOrderStatementWizard(models.TransientModel):
             orders = orders.filtered(
                 lambda o: (o.amount_total or 0.0) - (o.manual_paid_amount or 0.0) > 0.00001
             )
+
+        # Ordenar por:
+        # 1) Código interno del cliente
+        # 2) Nombre del cliente
+        # 3) Correlativo interno de la orden
+        # 4) Fecha de la orden
+        orders = orders.sorted(
+            key=lambda o: (
+                o.partner_id.internal_code or "",
+                o.partner_id.display_name or "",
+                o.internal_correlative or "",
+                o.date_order or fields.Datetime.now(),
+            )
+        )
 
         return orders
 
@@ -82,15 +111,12 @@ class PosOrderStatementWizard(models.TransientModel):
     def action_print_report(self):
         self.ensure_one()
 
-        # 1) Órdenes según filtros del wizard
-        orders = self._get_orders().exists()  # .exists() elimina IDs “muertos”
-
+        orders = self._get_orders().exists()
         if not orders:
             raise UserError(
                 _("No se encontraron órdenes POS que cumplan los filtros seleccionados.")
             )
 
-        # 2) Buscamos el reporte por nombre técnico
         report = self.env["ir.actions.report"]._get_report_from_name(
             "pos_order_manual_payment.report_pos_order_statement"
         )
@@ -105,25 +131,22 @@ class PosOrderStatementWizard(models.TransientModel):
                 )
             )
 
-        # 3) Limpiamos active_ids/active_id/active_model del CONTEXTO que vamos a usar
         ctx = dict(self.env.context or {})
         ctx.pop("active_ids", None)
         ctx.pop("active_id", None)
         ctx.pop("active_model", None)
 
-        # Mandamos también los filtros del wizard por si los quieres usar en QWeb
         ctx.update(
             {
                 "statement_partner_id": self.partner_id.id if self.partner_id else False,
                 "statement_date_from": self.date_from and self.date_from.isoformat() or False,
                 "statement_date_to": self.date_to and self.date_to.isoformat() or False,
                 "statement_show_only_pending": self.show_only_pending,
+                "statement_pos_config_id": self.pos_config_id.id if self.pos_config_id else False,
             }
         )
 
-        # 4) Llamamos al reporte usando el contexto LIMPIO
-        action = report.with_context(ctx).report_action(orders.ids)
-        return action
+        return report.with_context(ctx).report_action(orders.ids)
 
     # -------------------------------------------------------------------------
     # Exportar a Excel
@@ -137,22 +160,27 @@ class PosOrderStatementWizard(models.TransientModel):
                 _("No se encontraron órdenes POS que cumplan los filtros seleccionados.")
             )
 
-        # Crear libro en memoria
         output = io.BytesIO()
         workbook = xlsxwriter.Workbook(output, {"in_memory": True})
         sheet = workbook.add_worksheet("Estado de cuenta POS")
 
-        # Formatos
         bold = workbook.add_format({"bold": True})
         money = workbook.add_format({"num_format": "#,##0.00"})
         date_fmt = workbook.add_format({"num_format": "dd/mm/yyyy"})
 
         row = 0
 
-        # Encabezado con filtros
+        # Filtros
         sheet.write(row, 0, "Cliente", bold)
         if self.partner_id:
             sheet.write(row, 1, self.partner_id.display_name or "")
+        else:
+            sheet.write(row, 1, "Todos")
+        row += 1
+
+        sheet.write(row, 0, "Establecimiento", bold)
+        if self.pos_config_id:
+            sheet.write(row, 1, self.pos_config_id.display_name or "")
         else:
             sheet.write(row, 1, "Todos")
         row += 1
@@ -183,7 +211,6 @@ class PosOrderStatementWizard(models.TransientModel):
             sheet.write(row, col, header, bold)
         row += 1
 
-        # Mismos agrupamientos que en el PDF
         current_partner = False
         subtotal_total = 0.0
         subtotal_paid = 0.0
@@ -209,7 +236,6 @@ class PosOrderStatementWizard(models.TransientModel):
                 row += 2
                 subtotal_total = subtotal_paid = subtotal_pending = 0.0
 
-            # Solo actualizamos current_partner (ya no escribimos "Cliente: ...")
             if not current_partner or partner != current_partner:
                 current_partner = partner
 
@@ -220,7 +246,7 @@ class PosOrderStatementWizard(models.TransientModel):
                 sheet.write(row, 0, "")
 
             sheet.write(row, 1, partner.display_name or "")
-            sheet.write(row, 2, o.name or "")
+            sheet.write(row, 2, o.internal_correlative or o.name or "")
             sheet.write(row, 3, o.pos_reference or "")
             sheet.write(row, 4, o.amount_total or 0.0, money)
             sheet.write(row, 5, o.manual_paid_amount or 0.0, money)

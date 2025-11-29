@@ -6,10 +6,11 @@
         <field name="name">pos.order.invoice.statement.wizard.form</field>
         <field name="model">pos.order.invoice.statement.wizard</field>
         <field name="arch" type="xml">
-            <form string="Estado de cuenta de facturación POS">
+            <form string="Estado de cuenta facturación POS">
                 <group>
                     <group>
                         <field name="partner_id"/>
+                        <field name="pos_config_id"/>
                         <field name="date_from"/>
                         <field name="date_to"/>
                     </group>
@@ -18,18 +19,17 @@
                     </group>
                 </group>
                 <footer>
-                    <button name="action_print"
-                            string="Imprimir"
+                    <button string="Imprimir estado de cuenta"
                             type="object"
+                            name="action_print"
                             class="btn-primary"/>
-                                <!-- 🔽 NUEVO: botón Excel -->
-                    <button name="action_export_xlsx"
-                            string="Exportar a Excel"
+                    <button string="Exportar a Excel"
                             type="object"
+                            name="action_export_xlsx"
                             class="btn-secondary"/>
                     <button string="Cancelar"
-                            class="btn-secondary"
-                            special="cancel"/>
+                            special="cancel"
+                            class="btn-secondary"/>
                 </footer>
             </form>
         </field>

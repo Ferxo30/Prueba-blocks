@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Libro de Banco: añadir botón Excel al wizard -->
+    <record id="asistente_reporte_banco_inherit_xlsx" model="ir.ui.view">
+        <field name="name">l10n_gt_extra.asistente_reporte_banco.xlsx</field>
+        <field name="model">l10n_gt_extra.asistente_reporte_banco</field>
+        <field name="inherit_id" ref="l10n_gt_extra.asistente_reporte_banco"/>
+        <field name="arch" type="xml">
+            <xpath expr="//footer/button[@name='print_report']" position="after">
+                <button string="Export to Excel"
+                        name="action_export_xlsx"
+                        type="object"
+                        class="btn-secondary"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Libro de Inventario: añadir botón Excel al wizard -->
+    <record id="asistente_reporte_inventario_inherit_xlsx" model="ir.ui.view">
+        <field name="name">l10n_gt_extra.asistente_reporte_inventario.xlsx</field>
+        <field name="model">l10n_gt_extra.asistente_reporte_inventario</field>
+        <field name="inherit_id" ref="l10n_gt_extra.asistente_reporte_inventario"/>
+        <field name="arch" type="xml">
+            <xpath expr="//footer/button[@name='print_report']" position="after">
+                <button string="Export to Excel"
+                        name="action_export_xlsx"
+                        type="object"
+                        class="btn-secondary"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

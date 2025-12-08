@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Day Book -->
+    <record id="account_day_book_report_view_form_xlsx" model="ir.ui.view">
+        <field name="name">account.day.book.report.view.form.xlsx</field>
+        <field name="model">account.day.book.report</field>
+        <field name="inherit_id" ref="base_accounting_kit.account_day_book_report_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//footer/button[@name='check_report']" position="after">
+                <button string="Export to Excel"
+                        name="action_export_xlsx"
+                        type="object"
+                        class="btn-secondary"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Bank Book -->
+    <record id="account_bank_book_report_view_form_xlsx" model="ir.ui.view">
+        <field name="name">account.bank.book.report.view.form.xlsx</field>
+        <field name="model">account.bank.book.report</field>
+        <field name="inherit_id" ref="base_accounting_kit.account_bank_book_report_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//footer/button[@name='check_report']" position="after">
+                <button string="Export to Excel"
+                        name="action_export_xlsx"
+                        type="object"
+                        class="btn-secondary"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Cash Book -->
+    <record id="account_cash_book_report_view_form_xlsx" model="ir.ui.view">
+        <field name="name">account.cash.book.report.view.form.xlsx</field>
+        <field name="model">account.cash.book.report</field>
+        <field name="inherit_id" ref="base_accounting_kit.account_cash_book_report_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//footer/button[@name='check_report']" position="after">
+                <button string="Export to Excel"
+                        name="action_export_xlsx"
+                        type="object"
+                        class="btn-secondary"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

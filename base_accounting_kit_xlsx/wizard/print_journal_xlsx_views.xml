@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="account_common_report_inherited_xlsx" model="ir.ui.view">
+        <field name="name">account.print.journal.view.form.xlsx</field>
+        <field name="model">account.print.journal</field>
+        <field name="inherit_id" ref="base_accounting_kit.account_common_report_inherited"/>
+        <field name="arch" type="xml">
+            <xpath expr="//footer/button[@name='check_report']" position="after">
+                <button string="Export to Excel"
+                        name="action_export_xlsx"
+                        type="object"
+                        class="btn-secondary"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -33,13 +33,13 @@ class PosOrderInvoiceStatementWizard(models.TransientModel):
     )
 
     # -------------------------------------------------------------------------
-    # Helpers
+    # Dominio base
     # -------------------------------------------------------------------------
     def _get_orders_domain(self):
-        """Dominio base: órdenes POS que tengan factura."""
         self.ensure_one()
         domain = [
             ("account_move", "!=", False),
+            ("account_move.state", "!=", "cancel"),  # Excluir facturas canceladas
         ]
 
         if self.partner_id:
@@ -49,7 +49,6 @@ class PosOrderInvoiceStatementWizard(models.TransientModel):
             domain.append(("session_id.config_id", "=", self.pos_config_id.id))
 
         if self.date_from:
-            # Filtramos por fecha de la factura
             domain.append(("account_move.invoice_date", ">=", self.date_from))
 
         if self.date_to:
@@ -57,8 +56,11 @@ class PosOrderInvoiceStatementWizard(models.TransientModel):
 
         return domain
 
+    # -------------------------------------------------------------------------
+    # Helpers
+    # -------------------------------------------------------------------------
     def _order_has_refunds(self, order):
-        """Devuelve True si la orden es un reembolso o tiene reembolsos ligados."""
+        """True si la orden es un reembolso o tiene reembolsos ligados."""
         refund_order = getattr(order, "refund_order_id", False)
         refund_orders_1 = getattr(order, "refund_order_ids", False)
         refund_orders_2 = getattr(order, "refund_orders", False)
@@ -66,20 +68,21 @@ class PosOrderInvoiceStatementWizard(models.TransientModel):
         return bool(refund_order or refund_orders_1 or refund_orders_2 or refund_count)
 
     def _filter_and_sort_orders(self, orders):
-        """Aplica filtros comunes (pendientes, reembolsos) y ordenamiento."""
-        # Filtramos por saldo pendiente si corresponde
-        if self.show_only_pending:
-            orders = orders.filtered(
-                lambda o: o.account_move and o.account_move.amount_residual > 0
-            )
+        """Aplica filtros comunes (canceladas, pendientes, reembolsos) y ordenamiento."""
+        # 0) Doble seguro: excluir facturas canceladas
+        orders = orders.filtered(lambda o: o.account_move and o.account_move.state != "cancel")
 
-        # Excluir órdenes que sean reembolsos o tengan reembolsos asociados
+        # 1) Solo pendientes
+        if self.show_only_pending:
+            orders = orders.filtered(lambda o: o.account_move and o.account_move.amount_residual > 0)
+
+        # 2) Excluir reembolsos o con reembolsos asociados
         orders = orders.filtered(lambda o: not self._order_has_refunds(o))
 
         if not orders:
             return orders
 
-        # Ordenar: código interno del cliente, nombre cliente, fecha factura, correlativo interno / nombre
+        # 3) Ordenar: código interno cliente, nombre, fecha factura, correlativo
         orders = orders.sorted(
             key=lambda o: (
                 o.partner_id.internal_code or "",
@@ -107,28 +110,24 @@ class PosOrderInvoiceStatementWizard(models.TransientModel):
                 "Verifica el XML del reporte."
             ))
 
-        domain = self._get_orders_domain()
-        orders = self.env["pos.order"].search(domain)
-
+        orders = self.env["pos.order"].search(self._get_orders_domain())
         orders = self._filter_and_sort_orders(orders)
+
         if not orders:
             raise UserError(_(
                 "No se encontraron órdenes de POS con factura "
                 "que coincidan con los filtros."
             ))
 
-        # Contexto para el QWeb
         ctx = dict(self.env.context or {})
-        ctx.update(
-            {
-                "statement_partner_id": self.partner_id.id if self.partner_id else False,
-                "statement_pos_config_id": self.pos_config_id.id if self.pos_config_id else False,
-                "statement_date_from": self.date_from and self.date_from.isoformat() or False,
-                "statement_date_to": self.date_to and self.date_to.isoformat() or False,
-                "statement_show_only_pending": self.show_only_pending,
-                "statement_mode": "invoice",
-            }
-        )
+        ctx.update({
+            "statement_partner_id": self.partner_id.id if self.partner_id else False,
+            "statement_pos_config_id": self.pos_config_id.id if self.pos_config_id else False,
+            "statement_date_from": self.date_from and self.date_from.isoformat() or False,
+            "statement_date_to": self.date_to and self.date_to.isoformat() or False,
+            "statement_show_only_pending": self.show_only_pending,
+            "statement_mode": "invoice",
+        })
 
         return report.with_context(ctx).report_action(orders.ids)
 
@@ -138,10 +137,9 @@ class PosOrderInvoiceStatementWizard(models.TransientModel):
     def action_export_xlsx(self):
         self.ensure_one()
 
-        domain = self._get_orders_domain()
-        orders = self.env["pos.order"].search(domain)
-
+        orders = self.env["pos.order"].search(self._get_orders_domain())
         orders = self._filter_and_sort_orders(orders)
+
         if not orders:
             raise UserError(_(
                 "No se encontraron órdenes de POS con factura "
@@ -159,17 +157,11 @@ class PosOrderInvoiceStatementWizard(models.TransientModel):
 
         # Filtros
         sheet.write(row, 0, "Cliente", bold)
-        if self.partner_id:
-            sheet.write(row, 1, self.partner_id.display_name or "")
-        else:
-            sheet.write(row, 1, "Todos")
+        sheet.write(row, 1, self.partner_id.display_name if self.partner_id else "Todos")
         row += 1
 
         sheet.write(row, 0, "Establecimiento", bold)
-        if self.pos_config_id:
-            sheet.write(row, 1, self.pos_config_id.display_name or self.pos_config_id.name or "")
-        else:
-            sheet.write(row, 1, "Todos")
+        sheet.write(row, 1, (self.pos_config_id.display_name or self.pos_config_id.name) if self.pos_config_id else "Todos")
         row += 1
 
         sheet.write(row, 0, "Solo con saldo pendiente", bold)
@@ -177,11 +169,11 @@ class PosOrderInvoiceStatementWizard(models.TransientModel):
         row += 1
 
         sheet.write(row, 0, "Desde", bold)
-        sheet.write(row, 1, self.date_from and self.date_from.strftime("%d/%m/%Y") or "")
+        sheet.write(row, 1, self.date_from.strftime("%d/%m/%Y") if self.date_from else "")
         row += 1
 
         sheet.write(row, 0, "Hasta", bold)
-        sheet.write(row, 1, self.date_to and self.date_to.strftime("%d/%m/%Y") or "")
+        sheet.write(row, 1, self.date_to.strftime("%d/%m/%Y") if self.date_to else "")
         row += 2
 
         # Encabezados
@@ -216,10 +208,7 @@ class PosOrderInvoiceStatementWizard(models.TransientModel):
             if current_partner and partner != current_partner:
                 display_name = current_partner.display_name or "Sin cliente"
                 internal_code = getattr(current_partner, "internal_code", False) or False
-                if internal_code:
-                    label = "Total cliente (%s) %s" % (internal_code, display_name)
-                else:
-                    label = "Total cliente %s" % display_name
+                label = "Total cliente (%s) %s" % (internal_code, display_name) if internal_code else "Total cliente %s" % display_name
 
                 sheet.write(row, 0, label, bold)
                 sheet.write(row, 4, subtotal_total, money)
@@ -228,15 +217,14 @@ class PosOrderInvoiceStatementWizard(models.TransientModel):
                 row += 2
                 subtotal_total = subtotal_paid = subtotal_pending = 0.0
 
-            # Encabezado cliente (solo actualizamos current_partner)
+            # Solo actualizamos current_partner
             if not current_partner or partner != current_partner:
                 current_partner = partner
 
             # Fila detalle
-            sheet.write(row, 0, inv.invoice_date and inv.invoice_date.strftime("%d/%m/%Y") or "")
+            sheet.write(row, 0, inv.invoice_date.strftime("%d/%m/%Y") if inv.invoice_date else "")
             sheet.write(row, 1, partner.display_name or "")
             sheet.write(row, 2, o.internal_correlative or o.name or "")
-            # Usar número FEL (numero_fel) en lugar del nombre de la factura
             sheet.write(row, 3, getattr(inv, "numero_fel", "") or "")
             sheet.write(row, 4, total, money)
             sheet.write(row, 5, paid, money)
@@ -251,10 +239,7 @@ class PosOrderInvoiceStatementWizard(models.TransientModel):
         if current_partner:
             display_name = current_partner.display_name or "Sin cliente"
             internal_code = getattr(current_partner, "internal_code", False) or False
-            if internal_code:
-                label = "Total cliente (%s) %s" % (internal_code, display_name)
-            else:
-                label = "Total cliente %s" % display_name
+            label = "Total cliente (%s) %s" % (internal_code, display_name) if internal_code else "Total cliente %s" % display_name
 
             sheet.write(row, 0, label, bold)
             sheet.write(row, 4, subtotal_total, money)

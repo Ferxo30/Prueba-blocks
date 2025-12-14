@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_swir_wizard,access_swir_wizard,model_stock_warehouse_inventory_report_wizard,stock.group_stock_user,1,1,1,1
+access_swir_wizard_line,access_swir_wizard_line,model_stock_warehouse_inventory_report_wizard_line,stock.group_stock_user,1,1,1,1

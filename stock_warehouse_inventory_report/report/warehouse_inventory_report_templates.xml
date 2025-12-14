@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="action_swir_pdf" model="ir.actions.report">
+        <field name="name">Saldos por Bodega</field>
+        <field name="model">stock.warehouse.inventory.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">stock_warehouse_inventory_report.report_swir_pdf</field>
+        <field name="report_file">stock_warehouse_inventory_report.report_swir_pdf</field>
+        <field name="print_report_name">'Saldos por Bodega - %s' % (object.to_date or '')</field>
+    </record>
+
+<template id="report_swir_pdf">
+    <t t-call="web.html_container">
+        <t t-foreach="docs" t-as="o">
+            <t t-call="web.external_layout">
+                <div class="page">
+
+                    <h2 style="text-align:center; margin-bottom:0;">
+                        <t t-esc="o.env.company.name"/>
+                    </h2>
+                    <h3 style="text-align:center; margin-top:4px;">
+                        Saldos por Bodega
+                    </h3>
+                    <p style="text-align:center; margin-top:6px;">
+                        Inventario a la fecha:
+                        <t t-esc="o.to_date"/>
+                    </p>
+
+                    <table class="table table-sm o_main_table" style="width:100%;">
+                        <thead>
+                            <tr>
+                                <th>Bodega</th>
+                                <th>Cod</th>
+                                <th>Producto</th>
+                                <th class="text-end">Saldo</th>
+                                <th class="text-end">Precio</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="o.line_ids" t-as="l">
+                                <tr>
+                                    <td><t t-esc="l.warehouse_name"/></td>
+                                    <td><t t-esc="l.product_code"/></td>
+                                    <td><t t-esc="l.product_name"/></td>
+                                    <td class="text-end"><t t-esc="('%.2f' % l.qty)"/></td>
+                                    <td class="text-end"><t t-esc="('%.2f' % l.unit_price)"/></td>
+                                    <td class="text-end"><t t-esc="('%.2f' % l.total)"/></td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+
+                </div>
+            </t>
+        </t>
+    </t>
+</template>
+
+</odoo>

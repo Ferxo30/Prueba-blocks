@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Wizard form -->
+    <record id="view_swir_wizard_form" model="ir.ui.view">
+        <field name="name">stock.warehouse.inventory.report.wizard.form</field>
+        <field name="model">stock.warehouse.inventory.report.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Imprimir existencias por bodega">
+                <group>
+                    <field name="to_date"/>
+                    <field name="warehouse_ids" widget="many2many_tags"/>
+                    <field name="price_basis"/>
+                    <field name="include_zero"/>
+                    <field name="include_negative"/>
+                </group>
+
+                <footer>
+                    <button string="Imprimir PDF" type="object" name="action_print_pdf" class="btn-primary"/>
+                    <button string="Exportar Excel" type="object" name="action_export_xlsx" class="btn-secondary"/>
+                    <button string="Cancelar" special="cancel" class="btn-link"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Intento de botones dentro del list view (en tu DB es <list>, no <tree>) -->
+    <record id="view_stock_product_tree_inherit_swir" model="ir.ui.view">
+        <field name="name">stock.product.list.inherit.swir</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="stock.view_stock_product_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="(//list/field)[1]" position="before">
+                <header>
+                    <button name="action_swir_open_wizard_pdf" type="object" string="Imprimir Existencias" class="btn-primary"/>
+                    
+                </header>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Acciones del servidor: aparecen en el menú de Acciones -->
+    <record id="server_action_swir_pdf" model="ir.actions.server">
+        <field name="name">Imprimir Existencias (PDF)</field>
+        <field name="model_id" ref="product.model_product_product"/>
+        <field name="binding_model_id" ref="product.model_product_product"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+action = env['product.product'].browse(env.context.get('active_ids', [])).action_swir_open_wizard_pdf()
+        </field>
+    </record>
+
+    <record id="server_action_swir_xlsx" model="ir.actions.server">
+        <field name="name">Exportar Existencias (Excel)</field>
+        <field name="model_id" ref="product.model_product_product"/>
+        <field name="binding_model_id" ref="product.model_product_product"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">
+action = env['product.product'].browse(env.context.get('active_ids', [])).action_swir_open_wizard_xlsx()
+        </field>
+    </record>
+
+</odoo>

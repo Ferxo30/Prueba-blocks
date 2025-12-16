@@ -4,7 +4,7 @@ import json
 import base64
 import xlsxwriter
 
-from odoo import api, fields, models, _
+from odoo import fields, models, _
 from odoo.exceptions import UserError
 
 
@@ -14,12 +14,7 @@ class StockWarehouseInventoryReportWizard(models.TransientModel):
 
     to_date = fields.Datetime(string="Inventario a la fecha")
     warehouse_ids = fields.Many2many("stock.warehouse", string="Bodegas")
-    price_basis = fields.Selection(
-        [("standard_price", "Costo (standard_price)"), ("list_price", "Precio de venta (list_price)")],
-        string="Precio a usar",
-        default="standard_price",
-        required=True,
-    )
+
     include_zero = fields.Boolean(string="Incluir saldo 0", default=True)
     include_negative = fields.Boolean(string="Incluir negativos", default=True)
 
@@ -30,6 +25,9 @@ class StockWarehouseInventoryReportWizard(models.TransientModel):
         string="Líneas",
         readonly=True,
     )
+
+    total_qty = fields.Float(string="Total saldo", readonly=True)
+    total_value = fields.Float(string="Total neto", readonly=True)
 
     file_data = fields.Binary(string="Archivo", readonly=True)
     file_name = fields.Char(string="Nombre de archivo", readonly=True)
@@ -51,9 +49,7 @@ class StockWarehouseInventoryReportWizard(models.TransientModel):
                 domain = json.loads(self.domain_json) or []
             except Exception:
                 domain = []
-        # El reporte original es sobre product.product (Variante del producto)
-        products = self.env["product.product"].search(domain)
-        return products
+        return self.env["product.product"].search(domain)
 
     def _get_warehouses(self):
         whs = self.warehouse_ids
@@ -62,17 +58,12 @@ class StockWarehouseInventoryReportWizard(models.TransientModel):
         return whs
 
     def _compute_qty_available(self, products, location_id, to_date):
-        """
-        Intenta usar cómputo batch si existe; si no, cae a qty_available con contexto.
-        """
         ctx = dict(self.env.context, location=location_id)
         if to_date:
             ctx["to_date"] = to_date
 
-        # Intento batch (varía por versión); fallback seguro
         qty_map = {}
         try:
-            # En muchas versiones existe _compute_quantities_dict
             qdict = products.with_context(ctx)._compute_quantities_dict(to_date=to_date)
             for pid, vals in qdict.items():
                 qty_map[pid] = vals.get("qty_available", 0.0)
@@ -81,6 +72,19 @@ class StockWarehouseInventoryReportWizard(models.TransientModel):
             for p in products:
                 qty_map[p.id] = p.with_context(ctx).qty_available
             return qty_map
+
+    def _get_unit_price_auto(self, product):
+        """
+        Regla:
+        - Si tiene Ventas (sale_ok) => list_price
+        - Si no, pero tiene Compras (purchase_ok) => standard_price
+        - Si ninguno => standard_price
+        """
+        if getattr(product, "sale_ok", False):
+            return product.list_price
+        if getattr(product, "purchase_ok", False):
+            return product.standard_price
+        return product.standard_price
 
     def action_compute_lines(self):
         self.ensure_one()
@@ -95,6 +99,9 @@ class StockWarehouseInventoryReportWizard(models.TransientModel):
             raise UserError(_("No hay bodegas configuradas."))
 
         lines = []
+        sum_qty = 0.0
+        sum_total = 0.0
+
         for wh in whs:
             location_id = wh.view_location_id.id
             qty_map = self._compute_qty_available(products, location_id, self.to_date)
@@ -106,8 +113,11 @@ class StockWarehouseInventoryReportWizard(models.TransientModel):
                 if not self.include_negative and qty < 0.0:
                     continue
 
-                unit_price = p.standard_price if self.price_basis == "standard_price" else p.list_price
+                unit_price = self._get_unit_price_auto(p)
                 total = qty * unit_price
+
+                sum_qty += qty
+                sum_total += total
 
                 lines.append((0, 0, {
                     "warehouse_name": wh.name,
@@ -119,7 +129,11 @@ class StockWarehouseInventoryReportWizard(models.TransientModel):
                     "total": total,
                 }))
 
-        self.write({"line_ids": lines})
+        self.write({
+            "line_ids": lines,
+            "total_qty": sum_qty,
+            "total_value": sum_total,
+        })
         return True
 
     def action_print_pdf(self):
@@ -142,36 +156,44 @@ class StockWarehouseInventoryReportWizard(models.TransientModel):
         fmt_cell = workbook.add_format({"border": 1})
         fmt_num = workbook.add_format({"border": 1, "num_format": "#,##0.00"})
         fmt_money = workbook.add_format({"border": 1, "num_format": "#,##0.00"})
+        fmt_bold = workbook.add_format({"bold": True, "border": 1})
+        fmt_bold_num = workbook.add_format({"bold": True, "border": 1, "num_format": "#,##0.00"})
+        fmt_bold_money = workbook.add_format({"bold": True, "border": 1, "num_format": "#,##0.00"})
 
         company = self.env.company.name or ""
         date_txt = fields.Datetime.to_string(self.to_date) if self.to_date else ""
 
-        # Encabezado estilo “reporte”
-        sheet.merge_range(0, 2, 0, 6, company, fmt_title)
-        sheet.merge_range(1, 2, 1, 6, "Saldos por Bodega", fmt_title)
-        sheet.merge_range(2, 2, 2, 6, f"Inventario a la fecha: {date_txt}", fmt_title)
+        # Encabezado
+        sheet.merge_range(0, 1, 0, 5, company, fmt_title)
+        sheet.merge_range(1, 1, 1, 5, "Saldos por Bodega", fmt_title)
+        sheet.merge_range(2, 1, 2, 5, f"Inventario a la fecha: {date_txt}", fmt_title)
 
-        headers = ["BODEGA", "COD BOD", "COD", "PRODUCTO", "SALDO", "PRECIO", "TOTAL"]
+        # EXCEL: Quitamos "COD BOD", dejamos solo BODEGA
+        headers = ["BODEGA", "COD", "PRODUCTO", "SALDO", "PRECIO", "TOTAL"]
         for col, h in enumerate(headers):
             sheet.write(4, col, h, fmt_hdr)
 
         row = 5
         for l in self.line_ids:
             sheet.write(row, 0, l.warehouse_name, fmt_cell)
-            sheet.write(row, 1, l.warehouse_code, fmt_cell)
-            sheet.write(row, 2, l.product_code, fmt_cell)
-            sheet.write(row, 3, l.product_name, fmt_cell)
-            sheet.write_number(row, 4, l.qty, fmt_num)
-            sheet.write_number(row, 5, l.unit_price, fmt_money)
-            sheet.write_number(row, 6, l.total, fmt_money)
+            sheet.write(row, 1, l.product_code, fmt_cell)
+            sheet.write(row, 2, l.product_name, fmt_cell)
+            sheet.write_number(row, 3, l.qty, fmt_num)
+            sheet.write_number(row, 4, l.unit_price, fmt_money)
+            sheet.write_number(row, 5, l.total, fmt_money)
             row += 1
 
+        # Fila NETO (sumas)
+        sheet.write(row, 2, "NETO", fmt_bold)
+        sheet.write_number(row, 3, self.total_qty, fmt_bold_num)
+        sheet.write(row, 4, "", fmt_bold)  # precio no suma
+        sheet.write_number(row, 5, self.total_value, fmt_bold_money)
+
         # Anchos
-        sheet.set_column(0, 0, 22)
-        sheet.set_column(1, 1, 10)
-        sheet.set_column(2, 2, 14)
-        sheet.set_column(3, 3, 40)
-        sheet.set_column(4, 6, 14)
+        sheet.set_column(0, 0, 24)  # BODEGA
+        sheet.set_column(1, 1, 14)  # COD
+        sheet.set_column(2, 2, 45)  # PRODUCTO
+        sheet.set_column(3, 5, 14)  # SALDO, PRECIO, TOTAL
 
         workbook.close()
         output.seek(0)
@@ -196,7 +218,7 @@ class StockWarehouseInventoryReportWizardLine(models.TransientModel):
     wizard_id = fields.Many2one("stock.warehouse.inventory.report.wizard", required=True, ondelete="cascade")
 
     warehouse_name = fields.Char(readonly=True)
-    warehouse_code = fields.Char(readonly=True)
+    warehouse_code = fields.Char(readonly=True)  # lo dejamos por compatibilidad (no se imprime en Excel)
 
     product_code = fields.Char(readonly=True)
     product_name = fields.Char(readonly=True)

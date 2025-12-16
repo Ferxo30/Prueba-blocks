@@ -10,7 +10,6 @@
                 <group>
                     <field name="to_date"/>
                     <field name="warehouse_ids" widget="many2many_tags"/>
-                    <field name="price_basis"/>
                     <field name="include_zero"/>
                     <field name="include_negative"/>
                 </group>

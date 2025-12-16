@@ -49,7 +49,19 @@
                                     <td class="text-end"><t t-esc="('%.2f' % l.total)"/></td>
                                 </tr>
                             </t>
+
+                            <tr>
+                                <td colspan="3" class="text-end"><strong>NETO</strong></td>
+                                <td class="text-end">
+                                    <strong><t t-esc="('%.2f' % o.total_qty)"/></strong>
+                                </td>
+                                <td class="text-end"></td>
+                                <td class="text-end">
+                                    <strong><t t-esc="('%.2f' % o.total_value)"/></strong>
+                                </td>
+                            </tr>
                         </tbody>
+
                     </table>
 
                 </div>

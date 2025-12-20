@@ -1,0 +1,8 @@
+<header>
+    <button
+        name="%(pos_order_master_payment.action_report_pos_order_master_payment_receipt)d"
+        type="action"
+        string="Imprimir recibo"
+        class="btn-primary"
+        icon="fa-print"/>
+</header>

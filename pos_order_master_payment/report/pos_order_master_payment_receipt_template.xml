@@ -1,0 +1,100 @@
+<odoo>
+    <template id="report_pos_order_master_payment_receipt">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <t t-set="pay_dt" t-value="o.date"/>
+                        <t t-set="pay_dt_str" t-value="pay_dt and pay_dt.strftime('%d/%m/%Y %H:%M:%S') or ''"/>
+                        <t t-set="cur_sym" t-value="(o.currency_id and o.currency_id.symbol) or ''"/>
+
+                        <h2>
+                            Recibo de pago:
+                            <span t-esc="o.name or ''"/>
+                        </h2>
+
+                        <p>
+                            <strong>Fecha de pago:</strong>
+                            <span t-esc="pay_dt_str"/>
+                        </p>
+
+                        <p>
+                            <strong>Cliente:</strong>
+                            <span t-esc="o.partner_id and o.partner_id.display_name or ''"/>
+                            <span> </span>
+                            <strong>Método de pago:</strong>
+                            <span t-esc="o.payment_method_id and o.payment_method_id.display_name or ''"/>
+                        </p>
+
+                        <p>
+                            <strong>Importe de pago:</strong>
+                            <span t-esc="(cur_sym + ' ' if cur_sym else '') + ('{:,.2f}'.format((o.amount_total or 0.0)))"/>
+                            <span> </span>
+                            <strong>Memo:</strong>
+                            <span t-esc="o.reference or ''"/>
+                        </p>
+
+                        <table class="table table-sm o_main_table">
+                            <thead>
+                                <tr>
+                                    <th>Fecha</th>
+                                    <th>Tipo</th>
+                                    <th>Identificador</th>
+                                    <th>Referencia</th>
+                                    <th class="text-end">Importe</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <t t-foreach="o.order_ids" t-as="order">
+                                    <!-- Cargo por ORDEN -->
+                                    <tr>
+                                        <td><span t-esc="pay_dt_str"/></td>
+                                        <td>Orden</td>
+                                        <td><span t-esc="order.display_name or ''"/></td>
+                                        <td></td>
+                                        <td class="text-end">
+                                            <span t-esc="(cur_sym + ' ' if cur_sym else '') + ('{:,.2f}'.format((order.amount_total or 0.0)))"/>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Abonos (PAGOS) aplicados a esa orden -->
+                                    <t t-set="allocs" t-value="[p for p in o.payment_ids if p.pos_order_id and p.pos_order_id.id == order.id]"/>
+                                    <t t-foreach="allocs" t-as="p">
+                                        <tr>
+                                            <td><span t-esc="pay_dt_str"/></td>
+                                            <td>Pago</td>
+                                            <td><span t-esc="o.name or ''"/></td>
+                                            <td><span t-esc="o.reference or ''"/></td>
+                                            <td class="text-end">
+                                                <span t-esc="(cur_sym + ' ' if cur_sym else '') + ('{:,.2f}'.format(-((p.amount or 0.0))))"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+
+                                    <!-- Saldo final (Importe debido) -->
+                                    <t t-set="due" t-value="max((order.amount_total or 0.0) - (order.manual_paid_amount or 0.0), 0.0)"/>
+                                    <tr>
+                                        <td colspan="4" class="text-end">
+                                            <strong>
+                                                Importe debido para <span t-esc="order.display_name or ''"/>
+                                            </strong>
+                                        </td>
+                                        <td class="text-end">
+                                            <strong>
+                                                <span t-esc="(cur_sym + ' ' if cur_sym else '') + ('{:,.2f}'.format((due or 0.0)))"/>
+                                            </strong>
+                                        </td>
+                                    </tr>
+                                </t>
+                            </tbody>
+                        </table>
+
+                        <div class="mt-3">
+                            <span t-esc="o.company_id and o.company_id.name or ''"/>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

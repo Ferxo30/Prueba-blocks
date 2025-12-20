@@ -1,0 +1,14 @@
+<odoo>
+
+    <record id="view_pos_order_payment_tree_inherit_master" model="ir.ui.view">
+        <field name="name">pos.order.payment.list.inherit.master</field>
+        <field name="model">pos.order.payment</field>
+        <field name="inherit_id" ref="pos_order_manual_payment.view_pos_order_payment_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='reference']" position="before">
+                <field name="master_id" optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

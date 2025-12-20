@@ -1,0 +1,77 @@
+<odoo>
+
+    <record id="view_pos_order_master_payment_wizard_form" model="ir.ui.view">
+        <field name="name">pos.order.payment.master.wizard.form</field>
+        <field name="model">pos.order.payment.master.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Registrar pago maestro POS">
+                <group>
+                    <group>
+                        <field name="date"/>
+                        <field name="payment_method_id"/>
+                        <field name="journal_id"/>
+                    </group>
+                    <group>
+                        <field name="currency_id" readonly="1"/>
+                        <field name="amount_total" readonly="1"/>
+                        <field name="reference"/>
+                    </group>
+                </group>
+                <group>
+                    <field name="note" placeholder="Notas..."/>
+                </group>
+
+                <separator string="Órdenes"/>
+                <field name="line_ids">
+                    <list editable="bottom" create="0" delete="1">
+                        <field name="pos_order_id" readonly="1" force_save="1"/>
+                        <field name="amount_total" readonly="1"/>
+                        <field name="manual_paid_amount" readonly="1"/>
+                        <field name="amount_due" readonly="1"/>
+                        <field name="amount_to_pay"/>
+                    </list>
+                </field>
+
+                <footer>
+                    <button string="Confirmar" type="object" name="action_confirm" class="btn-primary"/>
+                    <button string="Cancelar" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pos_order_master_payment_wizard" model="ir.actions.act_window">
+        <field name="name">Registrar pago maestro POS</field>
+        <field name="res_model">pos.order.payment.master.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_pos_order_master_payment_wizard_form"/>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Acción de servidor para selección múltiple en lista de órdenes POS -->
+    <record id="server_action_pos_order_master_payment_wizard" model="ir.actions.server">
+        <field name="name">Registrar pago maestro POS</field>
+        <field name="model_id" ref="point_of_sale.model_pos_order"/>
+        <field name="binding_model_id" ref="point_of_sale.model_pos_order"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code"><![CDATA[
+# Disponible como acción desde la lista (selección múltiple)
+if not records:
+    action = False
+else:
+    action = {
+        'name': 'Registrar pago maestro POS',
+        'type': 'ir.actions.act_window',
+        'res_model': 'pos.order.payment.master.wizard',
+        'view_mode': 'form',
+        'target': 'new',
+        'context': {
+            'active_model': 'pos.order',
+            'active_ids': records.ids,
+        },
+    }
+]]></field>
+    </record>
+
+</odoo>

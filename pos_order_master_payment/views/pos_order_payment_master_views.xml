@@ -1,0 +1,96 @@
+<odoo>
+
+    <record id="view_pos_order_payment_master_tree" model="ir.ui.view">
+        <field name="name">pos.order.payment.master.tree</field>
+        <field name="model">pos.order.payment.master</field>
+        <field name="arch" type="xml">
+            <list string="Pagos maestros POS">
+                <field name="name"/>
+                <field name="date"/>
+                <field name="partner_id"/>
+                <field name="payment_method_id"/>
+                <field name="journal_id"/>
+                <field name="order_count"/>
+                <field name="amount_total"/>
+                <field name="reference"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_pos_order_payment_master_form" model="ir.ui.view">
+        <field name="name">pos.order.payment.master.form</field>
+        <field name="model">pos.order.payment.master</field>
+        <field name="arch" type="xml">
+            <form string="Pago maestro POS">
+                <header>
+                    <button name="action_view_orders"
+                            type="object"
+                            string="Ver órdenes"
+                            class="btn-secondary"
+                            invisible="order_count == 0"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name" readonly="1"/>
+                            <field name="date"/>
+                            <field name="partner_id" readonly="1"/>
+                            <field name="payment_method_id"/>
+                            <field name="journal_id"/>
+                        </group>
+                        <group>
+                            <field name="currency_id" readonly="1"/>
+                            <field name="amount_total" readonly="1"/>
+                            <field name="reference"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="note" placeholder="Notas..."/>
+                    </group>
+
+                    <notebook>
+                        <page string="Pagos por orden">
+                            <field name="payment_ids" readonly="1">
+                                <list>
+                                    <field name="pos_order_id"/>
+                                    <field name="date"/>
+                                    <field name="payment_method_id"/>
+                                    <field name="journal_id"/>
+                                    <field name="amount"/>
+                                    <field name="reference"/>
+                                    <field name="name"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Órdenes">
+                            <field name="order_ids" readonly="1">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="date_order"/>
+                                    <field name="partner_id"/>
+                                    <field name="amount_total"/>
+                                    <field name="manual_paid_amount"/>
+                                    <field name="manual_payment_state"/>
+                                    <field name="state"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_pos_order_payment_master" model="ir.actions.act_window">
+        <field name="name">Pagos maestros POS</field>
+        <field name="res_model">pos.order.payment.master</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_pos_order_payment_master"
+              name="Pagos maestros POS"
+              parent="point_of_sale.menu_point_root"
+              action="action_pos_order_payment_master"
+              sequence="61"/>
+
+</odoo>

@@ -1,0 +1,15 @@
+<odoo>
+    <record id="action_report_pos_order_master_payment_receipt" model="ir.actions.report">
+        <field name="name">Recibo de pago (Pago Maestro POS)</field>
+        <field name="model">pos.order.payment.master</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">pos_order_master_payment.report_pos_order_master_payment_receipt</field>
+        <field name="report_file">pos_order_master_payment.report_pos_order_master_payment_receipt</field>
+        <field name="print_report_name">'Recibo de pago - %s' % (object.name)</field>
+
+        <!-- ESTO ES LO QUE LO HACE APARECER EN EL ENGRANAJE -->
+        <field name="binding_model_id" ref="model_pos_order_payment_master"/>
+        <field name="binding_type">report</field>
+        <field name="binding_view_types">form</field>
+    </record>
+</odoo>
